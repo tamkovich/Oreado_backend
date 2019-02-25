@@ -1,0 +1,156 @@
+{% load static %}
+
+
+<html lang="ru">
+
+<head>
+	<title itemprop="name">Postman</title>
+	<link href="{% static 'css/styles.css' %}" rel="stylesheet">
+	<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes, minimum-scale=1.0">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.0/jquery.min.js"></script>
+	<script type="text/javascript">
+		function addCategory(argument) {
+		}
+		function addEmail(argument) {
+		}
+		function getCategoryEmails(argument) {
+		}
+	</script>
+</head>
+
+<body class="no-icons">
+
+
+	<div class="overlay" title="окно"></div>
+	<div class="popup">
+		<div class="close_window">x</div>
+		<p style="margin: 0px;">Введите email:</p>
+		<input style="margin: 7px;border: 0.5px solid #505458;" type="text" name="email">
+		<button>Добавить</button>
+	</div>
+
+
+	<div class="page-wrapper page-wrapper_sidebar_on">
+	<!-- head menu-->
+	<div class="sitetoolbar sitetoolbar_tutorial">
+		<div class="sitetoolbar__content">
+			<div class="sitetoolbar__nav-toggle-wrap">
+				<button class="sitetoolbar__nav-toggle" type="button"></button>
+			</div>
+			<nav class="sitetoolbar__sections">
+				<ul class="sitetoolbar__sections-list">
+					<li class="sitetoolbar__section"><a class="sitetoolbar__link" href="#"  id="open_window">Привязать почту</a></li>
+					<li class="sitetoolbar__section"><a class="sitetoolbar__link" href="#">Избранное</a></li>
+					<li class="sitetoolbar__section"><a class="sitetoolbar__link" href="#">Marketplace</a></li>
+					<li class="sitetoolbar__section"><a class="sitetoolbar__link" href="#">Выйти</a></li>
+				</ul>
+			</nav>
+			<div class="sitetoolbar__login-wrap">
+			</div>
+			<div class="sitetoolbar__search-wrap">
+				<div class="sitetoolbar__search-content">
+				<form class="sitetoolbar__search" method="GET" action="/search">
+					<button class="sitetoolbar__search-toggle" type="button"></button>
+					<div class="sitetoolbar__search-input">
+						<div class="text-input"><input class="text-input__control" autofocus="autofocus" name="query" placeholder="Искать на Javascript.ru" type="text"/></div><button class="sitetoolbar__find" type="submit">Найти</button>
+					</div>
+				</form>
+				</div>
+			</div>
+		</div>
+
+		<div class="page page_sidebar_on">
+		<!-- content -->
+		<div class="page__inner" id="1" style="float: left; width: 100%;">
+			<div class="lessons-list" style="float: left; width: 100%;">
+				<ol class="lessons-list__lessons">
+					<li class="lessons-list__lesson" style="text-align: unset;padding: 6px 10px 6px 10px">
+						<span style="padding-right: 25px;">DigitalOcean1</span>
+						<span>FRA1 Network Maintenance 2018-11-01 21:00 UTC</span>
+						<span style="float: right;padding-left: 15px;">27.10.2018</span>
+					</li>
+				</ol>
+			</div>
+            <!--<div class="xxx"></div>-->
+			<div class="cont_message">
+                {% for message in messages %}
+                    <a href="{{ message.id }}">{{ message.from }} - {{ message.title }}</a>
+                    <br>
+                {% endfor %}
+{#                {% for body in bodies %}#}
+{#                    {{ body|safe }}#}
+{#                    <br>#}
+{#                    <hr>#}
+{#                    <br>#}
+{#                {% endfor %}#}
+            </div>
+		</div>
+
+		<div class="page__inner" id="2" style="display:none;">
+			<div class="lessons-list">
+				<ol class="lessons-list__lessons">
+					<li class="lessons-list__lesson" style="text-align: unset;padding: 6px 10px 6px 10px">
+						<span style="padding-right: 25px;">DigitalOcean2</span>
+						<span>FRA1 Network Maintenance 2018-11-01 21:00 UTC</span>
+						<span style="float: right;padding-left: 15px;">27.10.2018</span>
+					</li>
+				</ol>
+			</div>
+		</div>
+
+		<div class="page__inner" id="3" style="display:none;">
+			<div class="lessons-list">
+				<ol class="lessons-list__lessons">
+					<li class="lessons-list__lesson" style="text-align: unset;padding: 6px 10px 6px 10px">
+						<span style="padding-right: 25px;">DigitalOcean3</span>
+						<span>FRA1 Network Maintenance 2018-11-01 21:00 UTC</span>
+						<span style="float: right;padding-left: 15px;">27.10.2018</span>
+					</li>
+				</ol>
+			</div>
+		</div>
+		<!-- side bar -->
+		<div class="sidebar page__sidebar sidebar sidebar_sticky-footer" style="float: left;">
+			<div class="sidebar__inner">
+				<div class="sidebar__content">
+					<div class="sidebar__section">
+						<h4 class="sidebar__section-title">+ Добавить вкладку</h4>
+						<nav class="sidebar__navigation">
+							<div class="lessons-list">
+				<ol class="lessons-list__lessons">
+					<li class="lessons-list__lesson item " num="1">
+						<span style="text-align: center;" >Общее</span>
+					</li>
+					<li class="lessons-list__lesson item">
+						<span style="text-align: center;" num="2">DigitalOcean</span>
+					</li>
+					<li class="lessons-list__lesson item" num="3">
+						<span style="text-align: center;">DigitalOcean</span>
+					</li>
+
+				</ol>
+			</div>
+							</ul>
+						</nav>
+					</div>
+					<div class="sidebar__section"></div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script type="text/javascript">
+        {#console.log(bodies);#}
+        {#{% for data in bodies %}#}
+        {#    var text = {{ data|safe }};#}
+        {#    console.log(text);#}
+        {#    var obj = $('.cont_message').html(text).text();#}
+        {#    $('.page__inner#1').append(obj);#}
+        {#    $('.cont_message').html('');#}
+        {#    console.log(text);#}
+        {#    // $page_inner.html($('.cont_message'));#}
+        {#    console.log(obj);#}
+        {#{% endfor %}#}
+	</script>
+</body>
+</html>
