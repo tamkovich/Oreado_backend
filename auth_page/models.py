@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.postgres.fields import JSONField
 
 
 class UserViewedMail(models.Model):
@@ -16,3 +17,7 @@ class MailContent(models.Model):
     def __str__(self):
         return f"{self.message_id}"
 
+
+class CredsContent(models.Model):
+    email = models.EmailField(null=True)
+    data = JSONField()

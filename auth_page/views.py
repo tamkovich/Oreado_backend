@@ -3,6 +3,7 @@ import requests
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
+from oauth2client import client
 
 from functools import wraps
 
@@ -13,7 +14,7 @@ from django.urls import reverse
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import UserViewedMail, MailContent
+from auth_page.models import UserViewedMail, MailContent, CredsContent
 from box.gmail.models import Gmail
 
 
@@ -236,7 +237,22 @@ def credentials_to_dict(credentials):
       "_class": "OAuth2Credentials",
       "_module": "oauth2client.client"
     }
-    return data
+    mail = Gmail(creds=google.oauth2.credentials.Credentials(
+        token=data['access_token'],
+        refresh_token=data['refresh_token'],
+        token_uri="https://oauth2.googleapis.com/revoke",
+        client_id=data['client_id'],
+        client_secret=data['client_secret'],
+        scopes=data['scopes'],
+    ))
+    email = mail.get_user_info('me')['emailAddress']
+    try:
+        creds = CredsContent.objects.get(email=email)
+        creds.data = data
+        creds.save()
+    except CredsContent.DoesNotExist as _er:
+        CredsContent.objects.create(email=email, data=data)
+    return email
 
 
 def print_index_table():

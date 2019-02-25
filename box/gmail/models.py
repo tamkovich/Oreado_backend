@@ -197,3 +197,7 @@ class Gmail:
                     body = part.get_payload(decode=True)
                     return body
         return mime_msg.get_payload()
+
+    def get_user_info(self, user_id):
+        data = self.service.users().getProfile(userId=user_id)
+        return data.execute()
