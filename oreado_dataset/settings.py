@@ -25,7 +25,7 @@ SECRET_KEY = 'ydzwnw83^a7ju67-4(eutj^y^fc&=_b-e!(5cx9z&c&5#i%s3n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['127.0.0.1']
 
 
 # Application definition
@@ -37,6 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    'auth_page',
 ]
 
 MIDDLEWARE = [
@@ -54,7 +56,9 @@ ROOT_URLCONF = 'oreado_dataset.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [
+            os.path.join(BASE_DIR, 'templates/'),
+        ],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -118,3 +122,29 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/2.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+STATICFILES_DIRS = [
+    os.path.join(BASE_DIR, "static"),
+]
+
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
+CLIENT_SECRETS_FILE = "client_secret.json"
+
+EMAIL = {
+    "GMAIL": {
+        "CREDENTIALS": os.path.join("private", "client_secret.json"),
+        "TOKEN": os.path.join("private", "token.json"),
+    },
+}
+
+# If modifying these scopes, delete the file token.json.
+SCOPES = [
+    "https://mail.google.com/",
+    "https://www.googleapis.com/auth/gmail.compose",
+    "https://www.googleapis.com/auth/gmail.modify",
+    "https://www.googleapis.com/auth/gmail.readonly"
+]
+
+API_SERVICE_NAME = 'gmail'
+API_VERSION = 'v1'
