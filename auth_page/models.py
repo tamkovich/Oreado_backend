@@ -2,22 +2,22 @@ from django.db import models
 from django.contrib.postgres.fields import JSONField
 
 
-class UserViewedMail(models.Model):
-    client_id = models.TextField()
-    message_id = models.CharField(max_length=50)
-
-    def __str__(self):
-        return f"{self.client_id} - {self.message_id}"
-
-
-class MailContent(models.Model):
-    message_id = models.CharField(max_length=50)
-    content = models.TextField()
-
-    def __str__(self):
-        return f"{self.message_id}"
-
-
 class CredsContent(models.Model):
     email = models.EmailField(null=True)
     data = JSONField()
+
+
+class GmailMails(models.Model):
+    message_id = models.CharField(max_length=100)
+    date = models.CharField(max_length=50)
+    come_from = models.CharField(max_length=50)
+    go_to = models.CharField(max_length=50)
+    body = models.TextField()
+    snippet = models.TextField()
+    category = models.ForeignKey('MailCategory', null=True, blank=True, on_delete=models.SET_NULL)
+    owner = models.ForeignKey('CredsContent', null=True, blank=True, on_delete=models.SET_NULL)
+
+
+class MailCategory(models.Model):
+    name = models.CharField(max_length=200)
+    slug = models.SlugField()

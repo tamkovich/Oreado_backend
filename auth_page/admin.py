@@ -1,8 +1,7 @@
 from django.contrib import admin
 
-from .models import UserViewedMail, MailContent, CredsContent
+from .models import CredsContent, GmailMails, MailCategory
 
-
-admin.site.register(UserViewedMail)
-admin.site.register(MailContent)
 admin.site.register(CredsContent)
+admin.site.register(GmailMails)
+admin.site.register(MailCategory)

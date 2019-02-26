@@ -11,10 +11,7 @@ from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.conf import settings
 from django.urls import reverse
 
-from rest_framework.response import Response
-from rest_framework.views import APIView
-
-from auth_page.models import UserViewedMail, MailContent, CredsContent
+from auth_page.models import CredsContent
 from box.gmail.models import Gmail
 
 
@@ -34,115 +31,6 @@ def cred_check_decorator(func):
             credentials = google.oauth2.credentials.Credentials(**credentials)
         return func(*args, **kwargs, credentials=credentials)
     return inner
-
-
-class MainPage(APIView):
-
-    @cred_check_decorator
-    def get(self, request, **kwargs):
-        mail = Gmail(creds=kwargs.get('credentials'))
-
-        messages = []
-        messages_ids_threads = mail.list_messages_matching_query(
-            'me',
-            count_messages=request.GET.get('count_messages', 5)
-        )
-
-        messages_id = list(map(lambda mes: mes['id'], messages_ids_threads))
-
-        client_mails = UserViewedMail.objects.values_list('message_id')
-        client_mails = list(map(lambda x: x[0], client_mails))
-        mail_to_show = set(messages_id) - set(client_mails)
-
-        for message in mail.list_messages_by_id_json('me', mail_to_show):
-            message_id = message['id']
-            message_from = None
-            message_title = None
-            for header in message['payload']['headers']:
-                if header['name'].lower() == 'from':
-                    message_from = header['value']
-                elif header['name'].lower() == 'subject':
-                    message_title = header['value']
-
-            messages.append({
-                'id': message_id,
-                'from': ''.join(message_from.split()[:-1]).strip('"'),
-                'title': message_title
-            })
-        return Response(messages)
-
-    @cred_check_decorator
-    def post(self, request, **kwargs):
-        mail = Gmail(creds=kwargs.get('credentials'))
-
-        messages = []
-        messages_ids_threads = mail.list_messages_matching_query(
-            'me',
-            count_messages=request.POST.get('count_messages', 5)
-        )
-
-        messages_id = list(map(lambda mes: mes['id'], messages_ids_threads))
-
-        client_mails = UserViewedMail.objects.values_list('message_id')
-        client_mails = list(map(lambda x: x[0], client_mails))
-        mail_to_show = set(messages_id) - set(client_mails)
-
-        for message in mail.list_messages_by_id_json('me', mail_to_show):
-            message_id = message['id']
-            message_from = None
-            message_title = None
-            for header in message['payload']['headers']:
-                if header['name'].lower() == 'from':
-                    message_from = header['value']
-                elif header['name'].lower() == 'subject':
-                    message_title = header['value']
-
-            messages.append({
-                'id': message_id,
-                'from': ''.join(message_from.split()[:-1]).strip('"'),
-                'title': message_title
-            })
-        return Response(messages)
-
-
-class DetailPage(APIView):
-    @cred_check_decorator
-    def post(self, request, **kwargs):
-        message_id = kwargs.get('message_id')
-
-        UserViewedMail.objects.create(
-            client_id=kwargs.get('credentials').client_id,
-            message_id=message_id
-        )
-
-        mail = Gmail(creds=kwargs.get('credentials'))
-
-        message_content = MailContent.objects.filter(message_id=message_id)
-
-        if message_content.exists():
-            message_html = message_content[0].content
-        else:
-            message_html = mail.list_messages_content(
-                'me', [{'id': message_id, 'threadId': message_id}]
-            )[0]
-
-            MailContent.objects.create(
-                message_id=message_id,
-                content=message_html
-            )
-
-        return Response({'data': message_html})
-
-
-class DeleteFromViewed(APIView):
-    @cred_check_decorator
-    def post(self, request, **kwargs):
-        UserViewedMail.objects.filter(
-            client_id=kwargs.get('credentials').client_id,
-            message_id=kwargs.get('message_id')
-        ).delete()
-
-        return Response({'status': 'success'})
 
 
 def authorize(request):

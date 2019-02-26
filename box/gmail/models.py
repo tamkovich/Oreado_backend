@@ -2,13 +2,15 @@ import base64
 import email
 import loggers
 
-from httplib2 import Http
 from apiclient import errors
+from bs4 import BeautifulSoup
 from googleapiclient.discovery import build
+from httplib2 import Http
 from oauth2client import file, client, tools
 
-from utils.preproccessor import bytes_to_html
+from auth_page.models import GmailMails
 from oreado_dataset import settings
+from utils.preproccessor import bytes_to_html
 
 
 def my_decorator(func):
@@ -34,7 +36,7 @@ def for_all_methods(decorator):
 @for_all_methods(my_decorator)
 class Gmail:
 
-    def __init__(self, creds=None, logger=None):
+    def __init__(self, creds=None, owner=None, logger=None):
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
@@ -52,6 +54,10 @@ class Gmail:
                 settings.API_VERSION,
                 credentials=creds
             )
+        self.owner = owner
+        self.messages = []
+        self.html_messages = []
+        self.common_data = []
 
     def list_labels(self, user_id, *args, **kwargs):
         """
@@ -89,6 +95,30 @@ class Gmail:
         :return: <list> List of Messages content.
         """
         return list(map(lambda m: bytes_to_html(self.get_mime_message(user_id, m['id'])), messages_ids))
+
+    def list_messages_common_data(self, user_id, messages_ids):
+        for i, m in enumerate(messages_ids):
+            if GmailMails.objects.filter(message_id=m['id']).exists():
+                continue
+            message = self.get_message(user_id, m['id'])
+            body = bytes_to_html(self.get_mime_message(user_id, m['id']))
+            res = {
+                'message_id': m['id'],
+                'snippet': message['snippet'],
+            }
+            res['body'] = body
+            for d in message['payload']['headers']:
+                if d['name'] == 'Date':
+                    res['date'] = d['value']
+                if d['name'] == 'From':
+                    res['come_from'] = d['value']
+                if d['name'] == 'To':
+                    res['go_to'] = d['value']
+            res['owner_id'] = self.owner.id
+            GmailMails.objects.create(**res)
+            self.messages.append(message)
+            self.html_messages.append(body)
+            self.common_data.append(res)
 
     def list_messages_matching_query(self, user_id, count_messages=None, query='', *args, **kwargs):
         """List all Messages of the user's mailbox matching the query.
