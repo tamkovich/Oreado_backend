@@ -8,6 +8,7 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
+from auth_page.models import GmailMails
 from oreado_dataset import settings
 from utils.preproccessor import bytes_to_html
 
@@ -35,7 +36,7 @@ def for_all_methods(decorator):
 @for_all_methods(my_decorator)
 class Gmail:
 
-    def __init__(self, creds=None, logger=None):
+    def __init__(self, creds=None, owner=None, logger=None):
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
@@ -53,6 +54,10 @@ class Gmail:
                 settings.API_VERSION,
                 credentials=creds
             )
+        self.owner = owner
+        self.messages = []
+        self.html_messages = []
+        self.common_data = []
 
     def list_labels(self, user_id, *args, **kwargs):
         """
@@ -93,25 +98,15 @@ class Gmail:
 
     def list_messages_common_data(self, user_id, messages_ids):
         for i, m in enumerate(messages_ids):
-            if check_data(self.conn, self.cursor, m['id']):
+            if GmailMails.objects.filter(message_id=m['id']).exists():
                 continue
-            message = self.GetMessage(user_id, m['id'])
-            body = bytes_to_html(self.GetMimeMessage(user_id, m['id']))
+            message = self.get_message(user_id, m['id'])
+            body = bytes_to_html(self.get_mime_message(user_id, m['id']))
             res = {
                 'message_id': m['id'],
                 'snippet': message['snippet'],
-                'информационное_сообщение': '',
-                'дайджест_новостей': '',
-                'контент': '',
-                'реклама': '',
-                'скидки': '',
-                'акции': '',
             }
-            try:
-                res['body'] = BeautifulSoup(body, 'lxml').text
-                print(True)
-            except:
-                res['body'] = self.html_messages[i]
+            res['body'] = body
             for d in message['payload']['headers']:
                 if d['name'] == 'Date':
                     res['date'] = d['value']
@@ -119,7 +114,8 @@ class Gmail:
                     res['come_from'] = d['value']
                 if d['name'] == 'To':
                     res['go_to'] = d['value']
-            push_data(self.conn, self.cursor, res)
+            res['owner_id'] = self.owner.id
+            GmailMails.objects.create(**res)
             self.messages.append(message)
             self.html_messages.append(body)
             self.common_data.append(res)

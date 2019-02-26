@@ -17,7 +17,6 @@ from django.contrib import admin
 from django.urls import path, include
 
 urlpatterns = [
-    # path('admin/statuscheck/', include('celerybeat_status.urls')),
     path('admin/', admin.site.urls),
     path('', include(('auth_page.urls', 'auth_page'), namespace='auth_page')),
 ]

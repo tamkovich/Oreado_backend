@@ -8,10 +8,10 @@ class CredsContent(models.Model):
 
 
 class GmailMails(models.Model):
-    message_id = models.CharField(max_length=30)
-    date = models.CharField(max_length=30)
-    come_from = models.CharField(max_length=30)
-    go_to = models.CharField(max_length=30)
+    message_id = models.CharField(max_length=100)
+    date = models.CharField(max_length=50)
+    come_from = models.CharField(max_length=50)
+    go_to = models.CharField(max_length=50)
     body = models.TextField()
     snippet = models.TextField()
     category = models.ForeignKey('MailCategory', null=True, blank=True, on_delete=models.SET_NULL)

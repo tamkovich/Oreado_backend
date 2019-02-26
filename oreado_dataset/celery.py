@@ -1,7 +1,6 @@
 import os
 import google.oauth2.credentials
 
-from celery.schedules import crontab
 from celery import Celery
 
 from oreado_dataset.wsgi import application
@@ -30,22 +29,8 @@ def debug_task(self):
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    # Calls test('hello') every 10 seconds.
-    sender.add_periodic_task(10.0, test.s('hello'), name='add every 10')
-
-    # Calls test('world') every 30 seconds
-    sender.add_periodic_task(30.0, test.s('world'), expires=10)
-
-    # Executes every Monday morning at 7:30 a.m.
-    sender.add_periodic_task(
-        crontab(hour=7, minute=30, day_of_week=1),
-        test.s('Happy Mondays!'),
-    )
-
-
-@app.task
-def test(arg):
-    print(arg)
+    # Calls load_mails() every 5 minutes.
+    sender.add_periodic_task(300.0, load_mails.s())
 
 
 @app.task
@@ -60,10 +45,11 @@ def load_mails():
                 client_id=creds.data['client_id'],
                 client_secret=creds.data['client_secret'],
                 scopes=creds.data['scopes'],
-            )
+            ),
+            owner=creds
         )
-        messages_ids = mail.list_messages_matching_query('me')
-        mail.list_messages_common_data('me', messages_ids)
+        messages_ids = mail.list_messages_matching_query('me', count_messages=5)
+        mail.list_messages_common_data('me', messages_ids[:3])
 
 
 if __name__ == '__main__':

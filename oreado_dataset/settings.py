@@ -41,8 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
-    'celerybeat_status',
-
     'auth_page',
 ]
 
