@@ -1,8 +1,12 @@
 import os
-import requests
+import google.oauth2.credentials
 
 from celery.schedules import crontab
 from celery import Celery
+
+from oreado_dataset.wsgi import application
+from auth_page.models import CredsContent
+from box.gmail.models import Gmail
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'oreado_dataset.settings')
@@ -17,8 +21,6 @@ app.config_from_object('django.conf:settings', namespace='CELERY')
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
-
-API_URL = "https://api.cryptowat.ch"
 
 
 @app.task(bind=True)
@@ -44,6 +46,24 @@ def setup_periodic_tasks(sender, **kwargs):
 @app.task
 def test(arg):
     print(arg)
+
+
+@app.task
+def load_mails():
+    credentials = CredsContent.objects.all()
+    for creds in credentials:
+        mail = Gmail(
+            creds=google.oauth2.credentials.Credentials(
+                token=creds.data['access_token'],
+                refresh_token=creds.data['refresh_token'],
+                token_uri="https://oauth2.googleapis.com/revoke",
+                client_id=creds.data['client_id'],
+                client_secret=creds.data['client_secret'],
+                scopes=creds.data['scopes'],
+            )
+        )
+        messages_ids = mail.list_messages_matching_query('me')
+        mail.list_messages_common_data('me', messages_ids)
 
 
 if __name__ == '__main__':

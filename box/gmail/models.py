@@ -2,13 +2,14 @@ import base64
 import email
 import loggers
 
-from httplib2 import Http
 from apiclient import errors
+from bs4 import BeautifulSoup
 from googleapiclient.discovery import build
+from httplib2 import Http
 from oauth2client import file, client, tools
 
-from utils.preproccessor import bytes_to_html
 from oreado_dataset import settings
+from utils.preproccessor import bytes_to_html
 
 
 def my_decorator(func):
@@ -89,6 +90,39 @@ class Gmail:
         :return: <list> List of Messages content.
         """
         return list(map(lambda m: bytes_to_html(self.get_mime_message(user_id, m['id'])), messages_ids))
+
+    def list_messages_common_data(self, user_id, messages_ids):
+        for i, m in enumerate(messages_ids):
+            if check_data(self.conn, self.cursor, m['id']):
+                continue
+            message = self.GetMessage(user_id, m['id'])
+            body = bytes_to_html(self.GetMimeMessage(user_id, m['id']))
+            res = {
+                'message_id': m['id'],
+                'snippet': message['snippet'],
+                'информационное_сообщение': '',
+                'дайджест_новостей': '',
+                'контент': '',
+                'реклама': '',
+                'скидки': '',
+                'акции': '',
+            }
+            try:
+                res['body'] = BeautifulSoup(body, 'lxml').text
+                print(True)
+            except:
+                res['body'] = self.html_messages[i]
+            for d in message['payload']['headers']:
+                if d['name'] == 'Date':
+                    res['date'] = d['value']
+                if d['name'] == 'From':
+                    res['come_from'] = d['value']
+                if d['name'] == 'To':
+                    res['go_to'] = d['value']
+            push_data(self.conn, self.cursor, res)
+            self.messages.append(message)
+            self.html_messages.append(body)
+            self.common_data.append(res)
 
     def list_messages_matching_query(self, user_id, count_messages=None, query='', *args, **kwargs):
         """List all Messages of the user's mailbox matching the query.
