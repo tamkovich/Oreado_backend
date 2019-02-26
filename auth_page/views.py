@@ -1,4 +1,5 @@
 import json
+import random
 import requests
 
 import google.oauth2.credentials
@@ -7,11 +8,13 @@ from oauth2client import client
 
 from functools import wraps
 
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.conf import settings
+from django.db.models import Max
+from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
+from django.shortcuts import render
 from django.urls import reverse
 
-from auth_page.models import CredsContent
+from auth_page.models import CredsContent, GmailMails
 from box.gmail.models import Gmail
 
 
@@ -146,3 +149,10 @@ def credentials_to_dict(credentials):
 def print_index_table():
     return ('<table><tr><td><a href="/">'
             'Test an API request</a></td></tr></table>')
+
+
+def home(request):
+    max_id = GmailMails.objects.filter(category__isnull=True).aggregate(max_id=Max("id"))['max_id']
+    pk = random.randint(1, max_id)
+    rand_mail = GmailMails.objects.get(pk=pk)
+    return render(request, 'auth/home.html', {'mail': rand_mail})
