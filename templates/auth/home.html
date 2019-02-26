@@ -8,7 +8,8 @@
 </head>
 <body>
     <div>
-        <p>{{ mail.body }}</p>
+        <p>{{ mail.text_body }}</p>
+        <p>{{ mail.html_body|safe }}</p>
     </div>
 </body>
 </html>

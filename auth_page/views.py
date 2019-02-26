@@ -152,7 +152,4 @@ def print_index_table():
 
 
 def home(request):
-    max_id = GmailMails.objects.filter(category__isnull=True).aggregate(max_id=Max("id"))['max_id']
-    pk = random.randint(1, max_id)
-    rand_mail = GmailMails.objects.get(pk=pk)
-    return render(request, 'auth/home.html', {'mail': rand_mail})
+    return render(request, 'auth/home.html', {'mail': GmailMails.objects.random()})

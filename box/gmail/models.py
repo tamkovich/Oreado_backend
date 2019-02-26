@@ -10,7 +10,7 @@ from oauth2client import file, client, tools
 
 from auth_page.models import GmailMails
 from oreado_dataset import settings
-from utils.preproccessor import bytes_to_html
+from utils.preproccessor import bytes_to_html, bytes_html_to_text
 
 
 def my_decorator(func):
@@ -101,12 +101,15 @@ class Gmail:
             if GmailMails.objects.filter(message_id=m['id']).exists():
                 continue
             message = self.get_message(user_id, m['id'])
-            body = bytes_to_html(self.get_mime_message(user_id, m['id']))
+            body = self.get_mime_message(user_id, m['id'])
+            html_body = bytes_to_html(body)
+            text_body = bytes_html_to_text(body)
             res = {
                 'message_id': m['id'],
-                'snippet': message['snippet'],
+                'snippet': message['snippet']
             }
-            res['body'] = body
+            res['html_body'] = html_body
+            res['text_body'] = text_body
             for d in message['payload']['headers']:
                 if d['name'] == 'Date':
                     res['date'] = d['value']
@@ -117,7 +120,7 @@ class Gmail:
             res['owner_id'] = self.owner.id
             GmailMails.objects.create(**res)
             self.messages.append(message)
-            self.html_messages.append(body)
+            self.html_messages.append(text_body)
             self.common_data.append(res)
 
     def list_messages_matching_query(self, user_id, count_messages=None, query='', *args, **kwargs):

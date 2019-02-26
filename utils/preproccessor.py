@@ -21,5 +21,14 @@ def bytes_to_html(content):
     :param content: <bytes> html response
     :return: <str> html content
     """
+    return str(BeautifulSoup(content, features="html.parser"))
+
+
+def bytes_html_to_text(content):
+    """
+    Converts bytes content html to just text from HTML-content
+    :param content: <bytes> html response
+    :return: <str> text content
+    """
     soup = BeautifulSoup(content, features="html.parser")
     return cleanMe(soup)
