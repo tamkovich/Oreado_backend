@@ -1,15 +1,9 @@
-{% load static %}
+{% extends 'base.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Title</title>
-</head>
-<body>
+{% block content %}
+<div class="container">
     <div>
-        <p>{{ mail.text_body }}</p>
         <p>{{ mail.html_body|safe }}</p>
     </div>
-</body>
-</html>
+</div>
+{% endblock content %}

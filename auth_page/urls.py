@@ -8,6 +8,8 @@ from .views import (
     home,
 )
 
+app_name = 'auth_page'
+
 urlpatterns = [
     path('', home, name='home'),
     path('authorize/', authorize, name='authorize'),
