@@ -1,5 +1,4 @@
 import json
-import random
 import requests
 
 import google.oauth2.credentials
@@ -9,9 +8,8 @@ from oauth2client import client
 from functools import wraps
 
 from django.conf import settings
-from django.db.models import Max
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse
 
 from auth_page.models import CredsContent, GmailMails
@@ -71,8 +69,8 @@ def oauth2callback(request):
     flow.fetch_token(authorization_response=authorization_response)
 
     credentials = flow.credentials
-
-    return JsonResponse({'credentials': credentials_to_dict(credentials)})
+    _ = credentials_to_dict(credentials)
+    return redirect(reverse('auth_page:home'))
 
 
 def revoke(request):
