@@ -9,16 +9,14 @@
         <div class="col-md-4 col-sm-4">
             <hr>
             <div class="btn-group-vertical">
-                <a class="btn btn-outline-primary" href="#" role="button">Акция</a>
-                <a class="btn btn-outline-secondary" href="#" role="button">Дайджест новостей</a>
-                <a class="btn btn-outline-success" href="#" role="button">Информационное сообщение</a>
-                <a class="btn btn-outline-info" href="#" role="button">Контент</a>
-                <a class="btn btn-outline-warning" href="#" role="button">Реклама</a>
-                <a class="btn btn-outline-dark" href="#" role="button">Скидки</a>
-
+                {% for cat in mail_cats %}
+                <a class="btn {{ cat.css_class }}" href="/classify/{{ cat.slug }}/{{ mail.id }}/" role="button">
+                    {{ cat.name }}
+                </a>
+                {% endfor %}
             </div>
             <hr>
-            <a class="btn btn-outline-danger btn-block" href="#" role="button">Block</a>
+            <a class="btn btn-outline-danger btn-block disabled" href="#" role="button" aria-disabled="true">Block</a>
         </div>
     </div>
 </div>

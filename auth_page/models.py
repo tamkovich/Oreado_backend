@@ -8,7 +8,7 @@ class GmailMailManager(models.Manager):
     def random(self):
         count = self.aggregate(count=Count('id'))['count']
         random_index = randint(0, count - 1)
-        return self.all()[random_index]
+        return self.filter(category__isnull=True).filter(blocked=False)[random_index]
 
 
 class CredsContent(models.Model):
@@ -26,10 +26,15 @@ class GmailMails(models.Model):
     snippet = models.TextField()
     category = models.ForeignKey('MailCategory', null=True, blank=True, on_delete=models.SET_NULL)
     owner = models.ForeignKey('CredsContent', null=True, blank=True, on_delete=models.SET_NULL)
+    blocked = models.BooleanField(default=False)
 
     objects = GmailMailManager()
 
 
 class MailCategory(models.Model):
     name = models.CharField(max_length=200)
-    slug = models.SlugField()
+    slug = models.SlugField(blank=True)
+    css_class = models.CharField(max_length=30)
+
+    def __str__(self):
+        return self.name
