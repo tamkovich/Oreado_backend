@@ -2,8 +2,24 @@
 
 {% block content %}
 <div class="container">
-    <div>
-        <p>{{ mail.html_body|safe }}</p>
+    <div class="row">
+        <div class="col-md-8 col-sm-8">
+            <p>{{ mail.html_body|safe }}</p>
+        </div>
+        <div class="col-md-4 col-sm-4">
+            <hr>
+            <div class="btn-group-vertical">
+                <a class="btn btn-outline-primary" href="#" role="button">Акция</a>
+                <a class="btn btn-outline-secondary" href="#" role="button">Дайджест новостей</a>
+                <a class="btn btn-outline-success" href="#" role="button">Информационное сообщение</a>
+                <a class="btn btn-outline-info" href="#" role="button">Контент</a>
+                <a class="btn btn-outline-warning" href="#" role="button">Реклама</a>
+                <a class="btn btn-outline-dark" href="#" role="button">Скидки</a>
+
+            </div>
+            <hr>
+            <a class="btn btn-outline-danger btn-block" href="#" role="button">Block</a>
+        </div>
     </div>
 </div>
 {% endblock content %}
