@@ -153,8 +153,6 @@ def print_index_table():
 
 
 def home(request):
-    current_site = Site.objects.get_current()
-    print(current_site.domain)
     return render(
         request,
         'auth/home.html',
