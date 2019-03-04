@@ -29,8 +29,8 @@ def debug_task(self):
 
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
-    # Calls load_mails() every 5 minutes.
-    sender.add_periodic_task(300.0, load_mails.s())
+    # Calls load_mails() every 10 minutes.
+    sender.add_periodic_task(600.0, load_mails.s())
 
 
 @app.task
@@ -48,8 +48,8 @@ def load_mails():
             ),
             owner=creds
         )
-        messages_ids = mail.list_messages_matching_query('me', count_messages=5)
-        mail.list_messages_common_data('me', messages_ids[:3])
+        messages_ids = mail.list_messages_matching_query('me', count_messages=50)
+        mail.list_messages_common_data('me', messages_ids[:50])
 
 
 if __name__ == '__main__':
