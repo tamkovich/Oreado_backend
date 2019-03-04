@@ -19,9 +19,9 @@ class CredsContent(models.Model):
 
 class GmailMails(models.Model):
     message_id = models.CharField(max_length=100)
-    date = models.CharField(max_length=50)
-    come_from = models.CharField(max_length=50)
-    go_to = models.CharField(max_length=50)
+    date = models.CharField(max_length=100)
+    come_from = models.CharField(max_length=100)
+    go_to = models.CharField(max_length=100)
     text_body = models.TextField()
     html_body = models.TextField()
     snippet = models.TextField()
