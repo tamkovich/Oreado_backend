@@ -1,5 +1,4 @@
 import json
-import random
 import requests
 
 import google.oauth2.credentials
@@ -9,12 +8,11 @@ from oauth2client import client
 from functools import wraps
 
 from django.conf import settings
-from django.db.models import Max
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.urls import reverse
 
-from auth_page.models import CredsContent, GmailMails
+from auth_page.models import CredsContent, GmailMails, MailCategory
 from box.gmail.models import Gmail
 
 
@@ -71,8 +69,8 @@ def oauth2callback(request):
     flow.fetch_token(authorization_response=authorization_response)
 
     credentials = flow.credentials
-
-    return JsonResponse({'credentials': credentials_to_dict(credentials)})
+    _ = credentials_to_dict(credentials)
+    return redirect(reverse('auth_page:home'))
 
 
 def revoke(request):
@@ -152,4 +150,22 @@ def print_index_table():
 
 
 def home(request):
-    return render(request, 'auth/home.html', {'mail': GmailMails.objects.random()})
+    return render(
+        request,
+        'auth/home.html',
+        {'mail': GmailMails.objects.random(), 'mail_cats': MailCategory.objects.all()}
+    )
+
+
+def classify(request, cat_slug, mail_id):
+    mail = GmailMails.objects.get(id=int(mail_id))
+    mail.category = MailCategory.objects.get(slug=cat_slug)
+    mail.save()
+    return redirect(reverse('auth_page:home'))
+
+
+def block(request, mail_id):
+    mail = GmailMails.objects.get(id=int(mail_id))
+    mail.blocked = True
+    mail.save()
+    return redirect(reverse('auth_page:home'))
