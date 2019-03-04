@@ -11,6 +11,7 @@ from django.conf import settings
 from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
 from django.shortcuts import render, redirect
 from django.urls import reverse
+from django.contrib.sites.models import Site
 
 from auth_page.models import CredsContent, GmailMails, MailCategory
 from box.gmail.models import Gmail
@@ -40,8 +41,9 @@ def authorize(request):
         scopes=settings.SCOPES
     )
     pre_domain = 'https' if request.is_secure() else 'http'
-
-    flow.redirect_uri = (f"{pre_domain}://{request.get_host()}"
+    
+    current_site = Site.objects.get_current()
+    flow.redirect_uri = (f"{pre_domain}://{current_site.domain}"
                          f"{reverse('auth_page:oauth2callback')}")
 
     authorization_url, state = flow.authorization_url(
@@ -63,7 +65,8 @@ def oauth2callback(request):
 
     pre_domain = 'https' if request.is_secure() else 'http'
 
-    flow.redirect_uri = (f"{pre_domain}://{request.get_host()}"
+    current_site = Site.objects.get_current()
+    flow.redirect_uri = (f"{pre_domain}://{current_site.domain}"
                          f"{reverse('auth_page:oauth2callback')}")
     authorization_response = request.build_absolute_uri()
     flow.fetch_token(authorization_response=authorization_response)
@@ -150,6 +153,8 @@ def print_index_table():
 
 
 def home(request):
+    current_site = Site.objects.get_current()
+    print(current_site.domain)
     return render(
         request,
         'auth/home.html',
