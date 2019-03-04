@@ -28,7 +28,7 @@ SECRET_KEY = 'ydzwnw83^a7ju67-4(eutj^y^fc&=_b-e!(5cx9z&c&5#i%s3n'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['oreadodataset.ml', '68.183.75.150', 'localhost', '127.0.0.1']
 
 
 # Application definition
