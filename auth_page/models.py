@@ -6,9 +6,10 @@ from random import randint
 
 class GmailMailManager(models.Manager):
     def random(self):
-        count = self.aggregate(count=Count('id'))['count']
+        qs = self.filter(category__isnull=True).filter(blocked=False)
+        count = qs.aggregate(count=Count('id'))['count']
         random_index = randint(0, count - 1)
-        return self.filter(category__isnull=True).filter(blocked=False)[random_index]
+        return qs.filter(category__isnull=True).filter(blocked=False)[random_index]
 
 
 class CredsContent(models.Model):

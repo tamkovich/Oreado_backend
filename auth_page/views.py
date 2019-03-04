@@ -162,3 +162,10 @@ def classify(request, cat_slug, mail_id):
     mail.category = MailCategory.objects.get(slug=cat_slug)
     mail.save()
     return redirect(reverse('auth_page:home'))
+
+
+def block(request, mail_id):
+    mail = GmailMails.objects.get(id=int(mail_id))
+    mail.blocked = True
+    mail.save()
+    return redirect(reverse('auth_page:home'))
