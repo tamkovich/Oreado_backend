@@ -48,8 +48,8 @@ def load_mails():
             ),
             owner=creds
         )
-        messages_ids = mail.list_messages_matching_query('me', count_messages=50)
-        mail.list_messages_common_data('me', messages_ids[:50])
+        messages_ids = mail.list_messages_matching_query('me', count_messages=200)
+        mail.list_messages_common_data('me', messages_ids[:200])
 
 
 if __name__ == '__main__':
