@@ -1,38 +1,17 @@
-import json
+import uuid
 import requests
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
-from oauth2client import client
-
-from functools import wraps
 
 from django.conf import settings
-from django.http import HttpResponseRedirect, HttpResponse, JsonResponse
-from django.shortcuts import render, redirect
+from django.http import HttpResponseRedirect, HttpResponse
+from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib.sites.models import Site
 
-from auth_page.models import CredsContent, GmailMails, MailCategory
+from auth_page.models import Credential
 from box.gmail.models import Gmail
-
-
-def cred_check_decorator(func):
-    @wraps(func)
-    def inner(*args, **kwargs):
-        request = args[1]
-        if request.method == 'POST':
-            credentials = request.POST.get('credentials')
-        elif request.method == 'GET':
-            credentials = request.GET.get('credentials')
-        else:
-            credentials = None
-
-        if credentials:
-            credentials = json.loads(credentials)
-            credentials = google.oauth2.credentials.Credentials(**credentials)
-        return func(*args, **kwargs, credentials=credentials)
-    return inner
 
 
 def authorize(request):
@@ -60,7 +39,7 @@ def oauth2callback(request):
     flow = google_auth_oauthlib.flow.Flow.from_client_secrets_file(
         settings.EMAIL['GMAIL']['CREDENTIALS'],
         scopes=settings.SCOPES,
-        state=request.session['state']
+        state=request.session.get('state') or request.GET.get('state'),
     )
 
     pre_domain = 'https' if request.is_secure() else 'http'
@@ -72,7 +51,7 @@ def oauth2callback(request):
     flow.fetch_token(authorization_response=authorization_response)
 
     credentials = flow.credentials
-    _ = credentials_to_dict(credentials)
+    _ = save_credentials(credentials)
     return redirect(reverse('auth_page:home'))
 
 
@@ -105,70 +84,30 @@ def clear_credentials(request):
     return HttpResponse(f'Credentials have been cleared.')
 
 
-def credentials_to_dict(credentials):
+def save_credentials(credentials):
     data = {
-      "access_token": credentials.token,
-      "client_id": credentials.client_id,
-      "client_secret": credentials.client_secret,
-      "refresh_token": credentials.refresh_token,
-      "token_expiry": "2019-02-14T14:20:16Z",
-      "token_uri": "https://www.googleapis.com/oauth2/v3/token",
-      "user_agent": None,
-      "revoke_uri": "https://oauth2.googleapis.com/revoke",
-      "id_token": None,
-      "id_token_jwt": None,
-      "token_response": {
-        "access_token": credentials.token,
-        "expires_in": 3600,
-        "scope": credentials.scopes[-1],
-        "token_type": "Bearer"
-      },
-      "scopes": credentials.scopes,
-      "token_info_uri": "https://oauth2.googleapis.com/tokeninfo",
-      "invalid": False,
-      "_class": "OAuth2Credentials",
-      "_module": "oauth2client.client"
+        'token': credentials.token,
+        'refresh_token': credentials.refresh_token,
+        'token_uri': credentials.token_uri,
+        'client_id': credentials.client_id,
+        'client_secret': credentials.client_secret,
+        'scopes': credentials.scopes
     }
-    mail = Gmail(creds=google.oauth2.credentials.Credentials(
-        token=data['access_token'],
-        refresh_token=data['refresh_token'],
-        token_uri="https://oauth2.googleapis.com/revoke",
-        client_id=data['client_id'],
-        client_secret=data['client_secret'],
-        scopes=data['scopes'],
-    ))
+    mail = Gmail(creds=google.oauth2.credentials.Credentials(**data))
     email = mail.get_user_info('me')['emailAddress']
     try:
-        creds = CredsContent.objects.get(email=email)
+        creds = Credential.objects.get(email=email)
         creds.data = data
         creds.save()
-    except CredsContent.DoesNotExist as _er:
-        CredsContent.objects.create(email=email, data=data)
+    except Credential.DoesNotExist as _er:
+        Credential.objects.create(
+            email=email,
+            data=data,
+            uuid_token=uuid.uuid4()
+        )
     return email
 
 
 def print_index_table():
     return ('<table><tr><td><a href="/">'
             'Test an API request</a></td></tr></table>')
-
-
-def home(request):
-    return render(
-        request,
-        'auth/home.html',
-        {'mail': GmailMails.objects.random(), 'mail_cats': MailCategory.objects.all()}
-    )
-
-
-def classify(request, cat_slug, mail_id):
-    mail = GmailMails.objects.get(id=int(mail_id))
-    mail.category = MailCategory.objects.get(slug=cat_slug)
-    mail.save()
-    return redirect(reverse('auth_page:home'))
-
-
-def block(request, mail_id):
-    mail = GmailMails.objects.get(id=int(mail_id))
-    mail.blocked = True
-    mail.save()
-    return redirect(reverse('auth_page:home'))

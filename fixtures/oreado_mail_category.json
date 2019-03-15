@@ -1,0 +1,56 @@
+[
+  {
+    "model": "mails.mailcategory",
+    "pk": 1,
+    "fields": {
+      "name": "Акция",
+      "slug": "promotion",
+      "css_class": "btn-outline-primary"
+    }
+  },
+  {
+    "model": "mails.mailcategory",
+    "pk": 2,
+    "fields": {
+      "name": "Дайджест новостей",
+      "slug": "news-digest",
+      "css_class": "btn-outline-secondary"
+    }
+  },
+  {
+    "model": "mails.mailcategory",
+    "pk": 3,
+    "fields": {
+      "name": "Информационное сообщение",
+      "slug": "announcement",
+      "css_class": "btn-outline-success"
+    }
+  },
+  {
+    "model": "mails.mailcategory",
+    "pk": 4,
+    "fields": {
+      "name": "Контент",
+      "slug": "content",
+      "css_class": "btn-outline-info"
+    }
+  },
+  {
+    "model": "mails.mailcategory",
+    "pk": 5,
+    "fields": {
+      "name": "Реклама",
+      "slug": "advertising",
+      "css_class": "btn-outline-warning"
+    }
+  },
+  {
+    "model": "mails.mailcategory",
+    "pk": 6,
+    "fields": {
+      "name": "Скидки",
+      "slug": "discounts",
+      "css_class": "btn-outline-dark"
+    }
+  }
+]

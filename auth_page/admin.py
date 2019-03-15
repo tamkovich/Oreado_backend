@@ -1,7 +1,5 @@
 from django.contrib import admin
 
-from .models import CredsContent, GmailMails, MailCategory
+from auth_page.models import Credential
 
-admin.site.register(CredsContent)
-admin.site.register(GmailMails)
-admin.site.register(MailCategory)
+admin.site.register(Credential)

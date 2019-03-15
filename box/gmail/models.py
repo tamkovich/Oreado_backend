@@ -8,8 +8,8 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
-from auth_page.models import GmailMails
-from oreado_dataset import settings
+from mails.models import Mail
+from oreado_backend import settings
 from utils.preproccessor import bytes_to_html, bytes_html_to_text
 
 
@@ -98,16 +98,13 @@ class Gmail:
 
     def list_messages_common_data(self, user_id, messages_ids):
         for i, m in enumerate(messages_ids):
-            if GmailMails.objects.filter(message_id=m['id']).exists():
+            if Mail.objects.filter(message_id=m['id']).exists():
                 continue
             message = self.get_message(user_id, m['id'])
             body = self.get_mime_message(user_id, m['id'])
             html_body = bytes_to_html(body)
             text_body = bytes_html_to_text(body)
-            res = {
-                'message_id': m['id'],
-                'snippet': message['snippet']
-            }
+            res = {'message_id': m['id'], 'snippet': message['snippet']}
             res['html_body'] = html_body
             res['text_body'] = text_body
             for d in message['payload']['headers']:
@@ -118,7 +115,7 @@ class Gmail:
                 if d['name'] == 'To':
                     res['go_to'] = d['value']
             res['owner_id'] = self.owner.id
-            GmailMails.objects.create(**res)
+            Mail.objects.create(**res)
             self.messages.append(message)
             self.html_messages.append(text_body)
             self.common_data.append(res)
