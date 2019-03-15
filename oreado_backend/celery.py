@@ -30,7 +30,7 @@ def debug_task(self):
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     # Calls load_mails() every 10 minutes.
-    sender.add_periodic_task(30.0, load_mails.s())
+    sender.add_periodic_task(600.0, load_mails.s())
 
 
 @app.task

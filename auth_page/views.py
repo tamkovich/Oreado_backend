@@ -52,7 +52,7 @@ def oauth2callback(request):
 
     credentials = flow.credentials
     _ = save_credentials(credentials)
-    return redirect(reverse('auth_page:home'))
+    return redirect(reverse('api-mails:list'))
 
 
 def revoke(request):
