@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth import get_user_model
 
@@ -34,7 +36,9 @@ class AuthAPI(APIView):
 
         user, created = User.objects.get_or_create(email=request.POST['email'])
 
-        password = make_password(50, request.POST['email'])
+        password = make_password(
+            50, request.POST['email'] + datetime.now().strftime('%Y%m%d%H%S')
+        )
 
         user.set_password(password)
 
