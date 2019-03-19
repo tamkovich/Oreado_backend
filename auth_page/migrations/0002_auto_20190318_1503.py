@@ -5,19 +5,15 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
 
-    dependencies = [
-        ('auth_page', '0001_initial'),
-    ]
+    dependencies = [("auth_page", "0001_initial")]
 
     operations = [
         migrations.RenameField(
-            model_name='credential',
-            old_name='uuid_token',
-            new_name='access_token',
+            model_name="credential", old_name="uuid_token", new_name="access_token"
         ),
         migrations.AddField(
-            model_name='credential',
-            name='refresh_token',
+            model_name="credential",
+            name="refresh_token",
             field=models.CharField(default=1, max_length=100),
             preserve_default=False,
         ),

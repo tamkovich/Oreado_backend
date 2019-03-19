@@ -8,18 +8,25 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Credential',
+            name="Credential",
             fields=[
-                ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('uuid_token', models.CharField(max_length=100)),
-                ('email', models.EmailField(max_length=254, null=True)),
-                ('data', django.contrib.postgres.fields.jsonb.JSONField()),
-                ('is_active', models.BooleanField(default=True)),
+                (
+                    "id",
+                    models.AutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("uuid_token", models.CharField(max_length=100)),
+                ("email", models.EmailField(max_length=254, null=True)),
+                ("data", django.contrib.postgres.fields.jsonb.JSONField()),
+                ("is_active", models.BooleanField(default=True)),
             ],
-        ),
+        )
     ]
