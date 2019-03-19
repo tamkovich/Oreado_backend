@@ -1,9 +1,16 @@
 from django.contrib.postgres.fields import JSONField
+from django.contrib.auth import get_user_model
 from django.db import models
 
 
+User = get_user_model()
+
+
 class Credential(models.Model):
-    uuid_token = models.CharField(max_length=100)
+    user = models.ForeignKey(
+        User, blank=True, null=True, on_delete=models.SET_NULL
+    )
+
     email = models.EmailField(null=True)
     data = JSONField()
     is_active = models.BooleanField(default=True)
