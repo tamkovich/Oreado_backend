@@ -72,7 +72,3 @@ def save_credentials(credentials):
     except Credential.DoesNotExist as _er:
         Credential.objects.create(email=email, data=data, uuid_token=uuid.uuid4())
     return email
-
-
-def print_index_table():
-    return '<table><tr><td><a href="/">' "Test an API request</a></td></tr></table>"
