@@ -54,37 +54,6 @@ def oauth2callback(request):
     return redirect(reverse("api-mails:list"))
 
 
-def revoke(request):
-    if "credentials" not in request.session:
-        return (
-            'You need to <a href="/authorize">authorize</a> '
-            "before testing the code to revoke credentials."
-        )
-
-    credentials = google.oauth2.credentials.Credentials(
-        **request.session["credentials"]
-    )
-
-    revoke = requests.post(
-        "https://accounts.google.com/o/oauth2/revoke",
-        params={"token": credentials.token},
-        headers={"content-type": "application/x-www-form-urlencoded"},
-    )
-
-    status_code = getattr(revoke, "status_code")
-
-    if status_code == 200:
-        return f"Credentials successfully revoked.{print_index_table()}"
-    else:
-        return f"An error occurred.{print_index_table()}"
-
-
-def clear_credentials(request):
-    if "credentials" in request.session:
-        del request.session["credentials"]
-    return HttpResponse(f"Credentials have been cleared.")
-
-
 def save_credentials(credentials):
     data = {
         "token": credentials.token,

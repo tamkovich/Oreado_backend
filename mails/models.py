@@ -8,6 +8,8 @@ from auth_page.models import Credential
 class MailManager(models.Manager):
     def random(self):
         qs = self.filter(category__isnull=True).filter(blocked=False)
+        if not qs.exists():
+            return False
         count = qs.aggregate(count=Count("id"))["count"]
         random_index = randint(0, count - 1)
         return qs[random_index]
