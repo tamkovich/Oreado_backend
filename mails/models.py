@@ -10,7 +10,7 @@ class MailManager(models.Manager):
         qs = self.filter(category__isnull=True).filter(blocked=False)
         count = qs.aggregate(count=Count("id"))["count"]
         random_index = randint(0, count - 1)
-        return qs.filter(category__isnull=True).filter(blocked=False)[random_index]
+        return qs[random_index]
 
 
 class Mail(models.Model):
