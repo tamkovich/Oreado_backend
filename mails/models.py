@@ -5,16 +5,6 @@ from random import randint
 from auth_page.models import Credential
 
 
-class MailManager(models.Manager):
-    def random(self):
-        qs = self.filter(category__isnull=True).filter(blocked=False)
-        if not qs.exists():
-            return False
-        count = qs.aggregate(count=Count("id"))["count"]
-        random_index = randint(0, count - 1)
-        return qs[random_index]
-
-
 class Mail(models.Model):
     message_id = models.CharField(max_length=100)
     date = models.CharField(max_length=100)
@@ -33,8 +23,6 @@ class Mail(models.Model):
     blocked = models.BooleanField(default=False)
     viewed = models.BooleanField(default=False)
     favourite = models.BooleanField(default=False)
-
-    objects = MailManager()
 
 
 class MailCategory(models.Model):
