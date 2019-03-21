@@ -1,0 +1,56 @@
+from datetime import datetime
+
+from django.contrib.auth.hashers import make_password
+from django.contrib.auth import get_user_model
+from django.conf import settings
+
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from auth_page.api.exception import ParameterError
+from mails.models import Credential
+
+
+User = get_user_model()
+
+
+class AuthAPI(APIView):
+    @staticmethod
+    def param_validation(data, *args):
+        for arg in args:
+            if arg not in data:
+                raise ParameterError({"error": f"You must pass {arg}"})
+
+    def post(self, request):
+        try:
+            self.param_validation(
+                request.POST,
+                "accessToken",
+                "clientID",
+                "refreshToken",
+                "scopes",
+                "email"
+            )
+        except ParameterError as err:
+            return Response(str(err))
+
+        data = {
+            "token": request.POST["accessToken"],
+            "scopes": request.POST["scopes"],
+            "client_id": request.POST["clientID"],
+            "refresh_token": request.POST["refreshToken"],
+            "token_uri": settings.AUTH_CONFIG['token_uri'],
+            "client_secret": settings.AUTH_CONFIG['client_secret'],
+        }
+
+        user, created = User.objects.get_or_create(email=request.POST["email"])
+
+        password = make_password(
+            50, request.POST["email"] + datetime.now().strftime("%Y%m%d%H%S")
+        )
+
+        user.set_password(password)
+
+        Credential.objects.create(user=user, email=request.POST["email"], data=data)
+
+        return Response({"username": request.POST["email"], "password": password})
