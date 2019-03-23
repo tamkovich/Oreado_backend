@@ -124,6 +124,8 @@ def mail_sender_active():
                 DATA[f"{user.id}-{mail.come_from}"] = []
 
     for key, value in DATA.items():
+        if not len(value):
+            continue
         digest_percent = value.count(NEWS_DIGEST_ID) / len(value)
         info_percent = value.count(INFO_MESSAGE_ID) / len(value)
 
