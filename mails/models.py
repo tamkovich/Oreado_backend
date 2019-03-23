@@ -1,18 +1,10 @@
+from django.contrib.auth import get_user_model
 from django.db import models
-from django.db.models.aggregates import Count
-from random import randint
 
 from auth_page.models import Credential
 
 
-class MailManager(models.Manager):
-    def random(self):
-        qs = self.filter(category__isnull=True).filter(blocked=False)
-        if not qs.exists():
-            return False
-        count = qs.aggregate(count=Count("id"))["count"]
-        random_index = randint(0, count - 1)
-        return qs[random_index]
+User = get_user_model()
 
 
 class Mail(models.Model):
@@ -34,8 +26,6 @@ class Mail(models.Model):
     viewed = models.BooleanField(default=False)
     favourite = models.BooleanField(default=False)
 
-    objects = MailManager()
-
 
 class MailCategory(models.Model):
     name = models.CharField(max_length=200)
@@ -44,3 +34,13 @@ class MailCategory(models.Model):
 
     def __str__(self):
         return self.name
+
+
+class MailSender(models.Model):
+    name = models.CharField(max_length=150)
+    user = models.ForeignKey(
+        User, blank=True, name=True, on_delete=models.SET_NULL
+    )
+
+    def __str__(self):
+        return f"{self.name} {self.user}"
