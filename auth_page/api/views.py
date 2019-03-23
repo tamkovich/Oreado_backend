@@ -1,3 +1,5 @@
+import google.oauth2.credentials
+
 from datetime import datetime
 
 from django.contrib.auth.hashers import make_password
@@ -7,9 +9,10 @@ from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+
 from auth_page.api.exception import ParameterError
 from mails.models import Credential
-
+from box.gmail.models import Gmail
 
 User = get_user_model()
 
@@ -34,7 +37,7 @@ class AuthAPI(APIView):
         except ParameterError as err:
             return Response(str(err))
 
-        data = {
+        credentials_data = {
             "token": request.POST["accessToken"],
             "scopes": request.POST["scopes"],
             "client_id": request.POST["clientID"],
@@ -42,6 +45,11 @@ class AuthAPI(APIView):
             "token_uri": settings.AUTH_CONFIG['token_uri'],
             "client_secret": settings.AUTH_CONFIG['client_secret'],
         }
+        credentials = google.oauth2.credentials.Credentials(**credentials_data)
+        print(credentials.valid)
+        mail = Gmail(creds=credentials)
+        print(mail.list_labels(456))
+        print(mail)
 
         user, created = User.objects.get_or_create(email=request.POST["email"])
 
@@ -51,6 +59,10 @@ class AuthAPI(APIView):
 
         user.set_password(password)
 
-        Credential.objects.create(user=user, email=request.POST["email"], data=data)
+        Credential.objects.get_or_create(
+            user=user,
+            email=request.POST["email"],
+            defaults={'credentials': credentials_data}
+        )
 
         return Response({"username": request.POST["email"], "password": password})

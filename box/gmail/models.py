@@ -71,6 +71,7 @@ class Gmail:
         :return: <list> List of Labels. Note that the
           returned list contains Labels IDs.
         """
+        print(dir(self.service))
         results = (
             self.service.users()
             .labels()

@@ -38,7 +38,8 @@ def load_mails():
     credentials = Credential.objects.all()
     for cred in credentials:
         mail = Gmail(
-            creds=google.oauth2.credentials.Credentials(**cred.data), owner=cred
+            creds=google.oauth2.credentials.Credentials(**cred.credentials),
+            owner=cred
         )
         messages_ids = mail.list_messages_matching_query("me", count_messages=200)
         mail.list_messages_common_data("me", messages_ids[:200])

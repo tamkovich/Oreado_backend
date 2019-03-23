@@ -38,9 +38,15 @@ class MailCategory(models.Model):
 
 class MailSender(models.Model):
     name = models.CharField(max_length=150)
-    user = models.ForeignKey(
-        User, blank=True, name=True, on_delete=models.SET_NULL
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+
+    is_active = models.BooleanField()
+
+    class Meta:
+        db_table = 'mail_sender'
+
+        verbose_name = 'Mail sender'
+        verbose_name_plural = 'Mail senders'
 
     def __str__(self):
-        return f"{self.name} {self.user}"
+        return f"{self.name}"
