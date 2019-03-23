@@ -110,11 +110,12 @@ def mail_sender_active():
         html = delete_extra_text(tags[ind])
         html_bodies.append(' '.join(html))
 
-    predictions = loaded_model.predict(html_bodies)
+    if len(html_bodies):
+        predictions = loaded_model.predict(html_bodies)
 
-    for mail, prediction in zip(mails_to_classify, predictions):
-        mail.category_id = prediction
-        mail.save()
+        for mail, prediction in zip(mails_to_classify, predictions):
+            mail.category_id = prediction
+            mail.save()
 
     for user in all_users:
         for mail in all_mails:
