@@ -134,7 +134,11 @@ def mail_sender_active():
 
         MailSender.objects.get_or_create(
             name=key.split('-')[1], user_id=key.split('-')[0],
-            defaults={'is_active': True if average >= 0.5 else False}
+            defaults={
+                'is_active': True if average >= 0.5 else False,
+                'average': average,
+                'mail_count': len(value)
+            }
         )
 
 

@@ -40,6 +40,9 @@ class MailSender(models.Model):
     name = models.CharField(max_length=150)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
+    average = models.FloatField(default=1)
+    mail_count = models.IntegerField(default=1)
+
     is_active = models.BooleanField()
 
     class Meta:
