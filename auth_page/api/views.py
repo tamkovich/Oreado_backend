@@ -25,9 +25,10 @@ class AuthAPI(APIView):
                 raise ParameterError({"error": f"You must pass {arg}"})
 
     def post(self, request):
+        post_data = request.data
         try:
             self.param_validation(
-                request.POST,
+                post_data,
                 "accessToken",
                 "clientID",
                 "refreshToken",
@@ -51,10 +52,10 @@ class AuthAPI(APIView):
         print(mail.list_labels(456))
         print(mail)
 
-        user, created = User.objects.get_or_create(email=request.POST["email"])
+        user, created = User.objects.get_or_create(email=post_data["email"])
 
         password = make_password(
-            50, request.POST["email"] + datetime.now().strftime("%Y%m%d%H%S")
+            50, post_data["email"] + datetime.now().strftime("%Y%m%d%H%S")
         )
 
         user.set_password(password)
@@ -65,4 +66,4 @@ class AuthAPI(APIView):
             defaults={'credentials': credentials_data}
         )
 
-        return Response({"username": request.POST["email"], "password": password})
+        return Response({"username": post_data["email"], "password": password})

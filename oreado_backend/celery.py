@@ -1,11 +1,17 @@
+from oreado_backend.wsgi import application
+
 import os
+import pickle
+
 import google.oauth2.credentials
 
+from bs4 import BeautifulSoup
 from celery import Celery
 
-from oreado_backend.wsgi import application
 from auth_page.models import Credential
 from box.gmail.models import Gmail
+from mails.models import Mail
+from clean import clean_text_main, rec_tag, delete_extra_text
 
 # set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "oreado_backend.settings")
@@ -20,6 +26,10 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 # Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
+
+
+MODEL_FILENAME = 'finalized_model3.sav'
+loaded_model = pickle.load(open(MODEL_FILENAME, 'rb'))
 
 
 @app.task(bind=True)
@@ -43,6 +53,28 @@ def load_mails():
         )
         messages_ids = mail.list_messages_matching_query("me", count_messages=200)
         mail.list_messages_common_data("me", messages_ids[:200])
+
+
+@app.task
+def classify_mail_category():
+    mails = Mail.objects.filter(category__isnull=True)
+
+    html_bodies = []
+
+    tags = {i: [] for i in range(len(mails))}
+
+    for ind, mail in enumerate(mails):
+        html = '<div>' + clean_text_main(mail.html_body) + '</div>'
+        rec_tag(ind, BeautifulSoup(html, 'html.parser'), tags)
+
+        html = delete_extra_text(tags[ind])
+        html_bodies.append(' '.join(html))
+
+    predictions = loaded_model.predict(html_bodies)
+
+    for mail, prediction in zip(mails, predictions):
+        mail.category_id = prediction
+        mail.save()
 
 
 if __name__ == "__main__":
