@@ -1,3 +1,5 @@
+import json
+
 from datetime import datetime
 
 from django.contrib.auth.hashers import make_password
@@ -22,9 +24,10 @@ class AuthAPI(APIView):
                 raise ParameterError({"error": f"You must pass {arg}"})
 
     def post(self, request):
+        post_data = request.data
         try:
             self.param_validation(
-                request.POST,
+                post_data,
                 "accessToken",
                 "clientID",
                 "refreshToken",
@@ -35,22 +38,22 @@ class AuthAPI(APIView):
             return Response(str(err))
 
         data = {
-            "token": request.POST["accessToken"],
-            "scopes": request.POST["scopes"],
-            "client_id": request.POST["clientID"],
-            "refresh_token": request.POST["refreshToken"],
+            "token": post_data["accessToken"],
+            "scopes": post_data["scopes"],
+            "client_id": post_data["clientID"],
+            "refresh_token": post_data["refreshToken"],
             "token_uri": settings.AUTH_CONFIG['token_uri'],
             "client_secret": settings.AUTH_CONFIG['client_secret'],
         }
 
-        user, created = User.objects.get_or_create(email=request.POST["email"])
+        user, created = User.objects.get_or_create(email=post_data["email"])
 
         password = make_password(
-            50, request.POST["email"] + datetime.now().strftime("%Y%m%d%H%S")
+            50, post_data["email"] + datetime.now().strftime("%Y%m%d%H%S")
         )
 
         user.set_password(password)
 
-        Credential.objects.create(user=user, email=request.POST["email"], data=data)
+        Credential.objects.create(user=user, email=post_data["email"], data=data)
 
-        return Response({"username": request.POST["email"], "password": password})
+        return Response({"username": post_data["email"], "password": password})
