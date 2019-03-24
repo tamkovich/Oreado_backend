@@ -5,15 +5,19 @@ import loggers
 import google.auth.exceptions
 
 from apiclient import errors
-from bs4 import BeautifulSoup
-from datetime import datetime
+from datetime import datetime, timedelta
+from django.utils import timezone
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
 from mails.models import Mail
 from oreado_backend import settings
-from utils.preproccessor import bytes_to_html, bytes_html_to_text
+from utils.preproccessor import (
+    bytes_to_html,
+    bytes_html_to_text,
+    scrap_mail_from_text,
+)
 
 
 def my_decorator(func):
@@ -21,7 +25,6 @@ def my_decorator(func):
         try:
             return func(*args, **kwargs)
         except errors.HttpError as _er:
-            print(_er)
             logger = args[0].__dict__.get("logger")
             if logger:
                 loggers.log(
@@ -131,10 +134,19 @@ class Gmail:
             )
         )
 
-    def list_messages_common_data(self, user_id, messages_ids):
+    def list_messages_common_data(
+            self,
+            user_id,
+            messages_ids,
+    ):
+        a_week_ago = datetime.now() - timedelta(days=20)
+        need_more = True
+        count = 0
         for i, m in enumerate(messages_ids):
             if Mail.objects.filter(message_id=m["id"]).exists():
                 continue
+            if not need_more:
+                break
             message = self.get_message(user_id, m["id"])
             body = self.get_mime_message(user_id, m["id"])
             html_body = bytes_to_html(body)
@@ -144,12 +156,7 @@ class Gmail:
             res["text_body"] = text_body
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
-                    """
-                    d['value'] example
-                    Sun, 17 Mar 2019 11:04:37 +0000 (UTC)
-                    """
-                    res['date'] = d['value']
-
+                    res["date"] = d["value"]
                     data = d["value"].split(',')
                     if len(data) == 1:
                         data = data[0].strip()
@@ -160,59 +167,50 @@ class Gmail:
                         cleaned,
                         '%d %b %Y %H:%M:%S'
                     )
-
+                    if res["cleaned_date"] < a_week_ago:
+                        need_more = False
+                        break
                 if d["name"] == "From":
                     res["come_from"] = d["value"]
+                    res["come_from_email"] = scrap_mail_from_text(d["value"])
                 if d["name"] == "To":
                     res["go_to"] = d["value"]
-            res["owner_id"] = self.owner.id
-            Mail.objects.create(**res)
-            self.messages.append(message)
-            self.html_messages.append(text_body)
-            self.common_data.append(res)
+                    res["go_to_email"] = scrap_mail_from_text(d["value"])
+            else:
+                count += 1
+                res["owner_id"] = self.owner.id
+                Mail.objects.create(**res)
+                self.messages.append(message)
+                self.html_messages.append(text_body)
+                self.common_data.append(res)
+        if count == 0:
+            return False
+        return need_more
 
-    def list_messages_common_data_by_user_id(self, user_id, messages_ids):
-        for i, m in enumerate(messages_ids):
-            if Mail.objects.filter(message_id=m["id"]).exists():
-                continue
-            message = self.get_message(user_id, m["id"])
-            body = self.get_mime_message(user_id, m["id"])
-            html_body = bytes_to_html(body)
-            text_body = bytes_html_to_text(body)
-            res = {"message_id": m["id"], "snippet": message["snippet"]}
-            res["html_body"] = html_body
-            res["text_body"] = text_body
-            for d in message["payload"]["headers"]:
-                if d["name"] == "Date":
-                    """
-                    d['value'] example
-                    Sun, 17 Mar 2019 11:04:37 +0000 (UTC)
-                    """
-                    res['date'] = d['value']
-
-                    data = d["value"].split(',')
-                    if len(data) == 1:
-                        data = data[0].strip()
-                    else:
-                        data = data[1].strip()
-                    cleaned = ' '.join(data.split()[:4])
-                    res["cleaned_date"] = datetime.strptime(
-                        cleaned,
-                        '%d %b %Y %H:%M:%S'
-                    )
-
-                if d["name"] == "From":
-                    res["come_from"] = d["value"]
-                if d["name"] == "To":
-                    res["go_to"] = d["value"]
-            res["owner_id"] = self.owner
-            Mail.objects.create(**res)
-            self.messages.append(message)
-            self.html_messages.append(text_body)
-            self.common_data.append(res)
+    def list_messages_one_step(
+            self,
+            user_id,
+            count_messages=None,
+    ):
+        iteration = 0
+        page_token = None
+        need_more = True
+        while True and need_more:
+            if iteration > 0:
+                count_messages += 100
+            messages_ids, page_token = self.list_messages_matching_query(
+                user_id,
+                count_messages=count_messages,
+                page_token=page_token,
+            )
+            need_more = self.list_messages_common_data(
+                user_id,
+                messages_ids[count_messages-100:] if iteration > 0 else messages_ids,
+            )
+            iteration += 1
 
     def list_messages_matching_query(
-        self, user_id, count_messages=None, query="", *args, **kwargs
+        self, user_id, count_messages=None, query="", page_token=None, *args, **kwargs
     ):
         """List all Messages of the user's mailbox matching the query.
 
@@ -227,12 +225,26 @@ class Gmail:
           returned list contains Message IDs, you must use get with the
           appropriate ID to get the details of a Message.
         """
-        response = (
-            self.service.users()
-            .messages()
-            .list(userId=user_id, maxResults=count_messages, q=query, *args, **kwargs)
-            .execute()
-        )
+        if page_token:
+            response = (
+                self.service.users()
+                    .messages()
+                    .list(
+                    userId=user_id,
+                    maxResults=count_messages,
+                    q=query,
+                    pageToken=page_token,
+                    *args,
+                    **kwargs,
+                ).execute()
+            )
+        else:
+            response = (
+                self.service.users()
+                .messages()
+                .list(userId=user_id, maxResults=count_messages, q=query, *args, **kwargs)
+                .execute()
+            )
         messages = []
         if "messages" in response:
             messages.extend(response["messages"])
@@ -247,15 +259,18 @@ class Gmail:
                     userId=user_id,
                     maxResults=count_messages,
                     q=query,
-                    pageToken=page_token,
+                    pageToken=response["nextPageToken"],
                     *args,
                     **kwargs,
                 )
                 .execute()
             )
             messages.extend(response["messages"])
-
-        return messages[:count_messages] if count_messages else messages
+        if "nextPageToken" not in response:
+            return messages, None
+        if count_messages:
+            return messages[:count_messages], page_token
+        return messages, page_token
 
     def list_messages_with_labels(self, user_id, label_ids=[], *args, **kwargs):
         """List all Messages of the user's mailbox with label_ids applied.
@@ -338,7 +353,6 @@ class Gmail:
             .get(userId=user_id, id=msg_id, format="raw")
             .execute()
         )
-
         loggers.log(logger=self.logger, level="INFO", msg=message["labelIds"])
         msg_str = base64.urlsafe_b64decode(message["raw"]).decode("utf-8")
 
