@@ -4,6 +4,7 @@ import loggers
 
 import google.auth.exceptions
 
+from django.contrib.auth import get_user_model
 from apiclient import errors
 from datetime import datetime, timedelta
 from django.utils import timezone
@@ -178,7 +179,6 @@ class Gmail:
                     res["come_from_email"] = scrap_mail_from_text(d["value"])
                 if d["name"] == "To":
                     res["go_to"] = d["value"]
-<<<<<<< HEAD
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
             else:
                 count += 1
@@ -190,21 +190,16 @@ class Gmail:
         if count == 0:
             return False
         return need_more
-=======
-            res["owner_id"] = self.owner.id
-            Mail.objects.create(**res)
-            self.messages.append(message)
-            self.html_messages.append(text_body)
-            self.common_data.append(res)
 
     def list_messages_common_data_by_user_id(self, user_id, messages_ids):
-        data = User.objects.values_list('id')
-        print(data)
-        print(data)
-
+        a_week_ago = datetime.now() - timedelta(days=20)
+        need_more = True
+        count = 0
         for i, m in enumerate(messages_ids):
             if Mail.objects.filter(message_id=m["id"]).exists():
                 continue
+            if not need_more:
+                break
             message = self.get_message(user_id, m["id"])
             body = self.get_mime_message(user_id, m["id"])
             html_body = bytes_to_html(body)
@@ -214,12 +209,7 @@ class Gmail:
             res["text_body"] = text_body
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
-                    """
-                    d['value'] example
-                    Sun, 17 Mar 2019 11:04:37 +0000 (UTC)
-                    """
-                    res['date'] = d['value']
-
+                    res["date"] = d["value"]
                     data = d["value"].split(',')
                     if len(data) == 1:
                         data = data[0].strip()
@@ -230,7 +220,25 @@ class Gmail:
                         cleaned,
                         '%d %b %Y %H:%M:%S'
                     )
->>>>>>> 89a47544b8bd4668c810ca74813ec0502b55fe11
+                    if res["cleaned_date"] < a_week_ago:
+                        need_more = False
+                        break
+                if d["name"] == "From":
+                    res["come_from"] = d["value"]
+                    res["come_from_email"] = scrap_mail_from_text(d["value"])
+                if d["name"] == "To":
+                    res["go_to"] = d["value"]
+                    res["go_to_email"] = scrap_mail_from_text(d["value"])
+            else:
+                count += 1
+                res["owner_id"] = self.owner.id
+                Mail.objects.create(**res)
+                self.messages.append(message)
+                self.html_messages.append(text_body)
+                self.common_data.append(res)
+        if count == 0:
+            return False
+        return need_more
 
     def list_messages_one_step(
             self,
