@@ -231,7 +231,9 @@ class Gmail:
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
             else:
                 count += 1
-                res["owner_id"] = self.owner
+                res["owner_id"] = (self.owner if isinstance(self.owner, int)
+                                   else self.owner.id)
+
                 Mail.objects.create(**res)
                 self.messages.append(message)
                 self.html_messages.append(text_body)
