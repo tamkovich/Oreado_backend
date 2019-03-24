@@ -149,10 +149,18 @@ class Gmail:
                     Sun, 17 Mar 2019 11:04:37 +0000 (UTC)
                     """
                     res['date'] = d['value']
+
+                    data = d["value"].split(',')
+                    if len(data) == 1:
+                        data = data[0].strip()
+                    else:
+                        data = data[1].strip()
+                    cleaned = ' '.join(data.split()[:4])
                     res["cleaned_date"] = datetime.strptime(
-                        d["value"].split(',')[1].strip().split('+')[0].strip(),
+                        cleaned,
                         '%d %b %Y %H:%M:%S'
                     )
+
                 if d["name"] == "From":
                     res["come_from"] = d["value"]
                 if d["name"] == "To":

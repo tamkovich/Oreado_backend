@@ -45,5 +45,3 @@ class SendersListAPIView(APIView):
             user=request.user, is_active=True
         )
         return Response({'data': senders.values('id', 'name')})
-
-

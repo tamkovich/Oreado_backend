@@ -92,8 +92,15 @@ def classify_mail_category():
 def add_cleaned_data_to_mail():
     for mail in Mail.objects.all():
         if not mail.cleaned_date:
+            print(mail.date)
+            data = mail.date.split(',')
+            if len(data) == 1:
+                data = data[0].strip()
+            else:
+                data = data[1].strip()
+            cleaned = ' '.join(data.split()[:4])
             mail.cleaned_date = datetime.strptime(
-                mail.date.split(',')[1].strip().split('+')[0].strip(),
+                cleaned,
                 '%d %b %Y %H:%M:%S'
             )
             mail.save()
