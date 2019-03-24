@@ -1,3 +1,5 @@
+import re
+
 from bs4 import BeautifulSoup
 
 
@@ -32,3 +34,15 @@ def bytes_html_to_text(content):
     """
     soup = BeautifulSoup(content, features="html.parser")
     return cleanMe(soup)
+
+
+def scrap_mail_from_text(content: str) -> str or None:
+    """
+    Scrapes with the email pattern from the received content
+    Returns first email which was found or None if nothing matches
+    """
+    res = re.findall(
+        r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,4}",
+        content
+    )
+    return res[0] if res else None
