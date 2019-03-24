@@ -20,6 +20,9 @@ from utils.preproccessor import (
 )
 
 
+User = get_user_model()
+
+
 def my_decorator(func):
     def wrapper(*args, **kwargs):
         try:
@@ -175,6 +178,7 @@ class Gmail:
                     res["come_from_email"] = scrap_mail_from_text(d["value"])
                 if d["name"] == "To":
                     res["go_to"] = d["value"]
+<<<<<<< HEAD
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
             else:
                 count += 1
@@ -186,6 +190,47 @@ class Gmail:
         if count == 0:
             return False
         return need_more
+=======
+            res["owner_id"] = self.owner.id
+            Mail.objects.create(**res)
+            self.messages.append(message)
+            self.html_messages.append(text_body)
+            self.common_data.append(res)
+
+    def list_messages_common_data_by_user_id(self, user_id, messages_ids):
+        data = User.objects.values_list('id')
+        print(data)
+        print(data)
+
+        for i, m in enumerate(messages_ids):
+            if Mail.objects.filter(message_id=m["id"]).exists():
+                continue
+            message = self.get_message(user_id, m["id"])
+            body = self.get_mime_message(user_id, m["id"])
+            html_body = bytes_to_html(body)
+            text_body = bytes_html_to_text(body)
+            res = {"message_id": m["id"], "snippet": message["snippet"]}
+            res["html_body"] = html_body
+            res["text_body"] = text_body
+            for d in message["payload"]["headers"]:
+                if d["name"] == "Date":
+                    """
+                    d['value'] example
+                    Sun, 17 Mar 2019 11:04:37 +0000 (UTC)
+                    """
+                    res['date'] = d['value']
+
+                    data = d["value"].split(',')
+                    if len(data) == 1:
+                        data = data[0].strip()
+                    else:
+                        data = data[1].strip()
+                    cleaned = ' '.join(data.split()[:4])
+                    res["cleaned_date"] = datetime.strptime(
+                        cleaned,
+                        '%d %b %Y %H:%M:%S'
+                    )
+>>>>>>> 89a47544b8bd4668c810ca74813ec0502b55fe11
 
     def list_messages_one_step(
             self,

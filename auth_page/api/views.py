@@ -64,12 +64,11 @@ class AuthAPI(APIView):
         user.set_password(password)
         user.save()
 
-        Credential.objects.get_or_create(
+        cred, created = Credential.objects.get_or_create(
             user=user,
             email=post_data["email"],
             defaults={'credentials': credentials_data}
         )
-
-        load_mails_for_user.delay(credentials_data, user.id)
+        load_mails_for_user.delay(credentials_data, cred.id, user.id)
 
         return Response({"username": post_data["email"], "password": password})
