@@ -67,13 +67,13 @@ def load_mails():
 
 
 @app.task
-def load_mails_for_user(credentials_data, user_id):
+def load_mails_for_user(credentials_data, cred_id, user_id):
     credentials = google.oauth2.credentials.Credentials(**credentials_data)
 
-    mail = Gmail(creds=credentials, owner=user_id)
+    mail = Gmail(creds=credentials, owner=cred_id)
 
     messages_ids = mail.list_messages_matching_query("me", count_messages=120)
-    mail.list_messages_common_data_by_user_id("me", messages_ids[:100])
+    mail.list_messages_common_data_by_user_id("me", messages_ids[:120])
 
     mail_sender_active_by_user_id.delay(user_id)
 
@@ -125,6 +125,7 @@ def mail_sender_active_by_user_id(user_id):
                 'mail_count': len(value)
             }
         )
+    return DATA
 
 
 @app.task
@@ -225,3 +226,5 @@ def mail_sender_active():
 
 if __name__ == "__main__":
     app.start()
+{"token": "ya29.GlzWBmAVtqEKDnee8boqnkt8t67rJnY-EVr47ISmGM8mItRYlLznbEtMxJBEokEiIGIgqGtg4RWULvmdUm6OcxVnkAWkZolNIBJuM8jkjnMeMk6qIchQO-twJQNqsQ", "scopes": ["https://www.googleapis.com/auth/gmail.readonly", "https://www.googleapis.com/auth/gmail.compose", "https://www.googleapis.com/auth/gmail.modify", "https://www.googleapis.com/auth/userinfo.email", "https://mail.google.com/", "https://www.googleapis.com/auth/userinfo.profile"], "client_id": "228942681109-j91pi3ejfl7srh5rbjldm9d1riq2kaad.apps.googleusercontent.com", "token_uri": "https://oauth2.googleapis.com/token", "client_secret": "Sh39oZYEi1y5aau0v6vYZ-ry", "refresh_token": "1/jyEJ91lCFBEGuksdscPMW7AMJx7siADZ1q2IvhYXNLU"}
+"true.man.mow@gmail.com"

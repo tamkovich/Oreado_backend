@@ -6,6 +6,7 @@ import google.auth.exceptions
 
 from apiclient import errors
 from bs4 import BeautifulSoup
+from django.contrib.auth import get_user_model
 from datetime import datetime
 from googleapiclient.discovery import build
 from httplib2 import Http
@@ -14,6 +15,9 @@ from oauth2client import file, client, tools
 from mails.models import Mail
 from oreado_backend import settings
 from utils.preproccessor import bytes_to_html, bytes_html_to_text
+
+
+User = get_user_model()
 
 
 def my_decorator(func):
@@ -172,6 +176,10 @@ class Gmail:
             self.common_data.append(res)
 
     def list_messages_common_data_by_user_id(self, user_id, messages_ids):
+        data = User.objects.values_list('id')
+        print(data)
+        print(data)
+
         for i, m in enumerate(messages_ids):
             if Mail.objects.filter(message_id=m["id"]).exists():
                 continue
