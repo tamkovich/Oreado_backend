@@ -118,28 +118,6 @@ def mail_sender_active_by_user_id(user_id):
 
 
 @app.task
-def classify_mail_category(user_id):
-    mails = Mail.objects.filter(owner__user_id=user_id)
-
-    html_bodies = []
-
-    tags = {i: [] for i in range(len(mails))}
-
-    for ind, mail in enumerate(mails):
-        html = '<div>' + clean_text_main(mail.html_body) + '</div>'
-        rec_tag(ind, BeautifulSoup(html, 'html.parser'), tags)
-
-        html = delete_extra_text(tags[ind])
-        html_bodies.append(' '.join(html))
-
-    predictions = loaded_model.predict(html_bodies)
-
-    for mail, prediction in zip(mails, predictions):
-        mail.category_id = prediction
-        mail.save()
-
-
-@app.task
 def add_cleaned_data_to_mail():
     for mail in Mail.objects.all():
         if not mail.cleaned_date:
@@ -171,14 +149,11 @@ def mail_sender_active():
 
     html_bodies = []
 
-    tags = {i: [] for i in range(len(mails_to_classify))}
-
     for ind, mail in enumerate(mails_to_classify):
-        html = '<div>' + clean_text_main(mail.html_body) + '</div>'
-        rec_tag(ind, BeautifulSoup(html, 'html.parser'), tags)
-
-        html = delete_extra_text(tags[ind])
-        html_bodies.append(' '.join(html))
+        html = (''.join(
+            re.findall(r'</?[a-z]\w*\b|>', mail.html_body, flags=re.I | re.M))
+                .replace('<', '').replace('>', ' ').replace('/', ''))
+        html_bodies.append(html)
 
     if len(html_bodies):
         predictions = loaded_model.predict(html_bodies)
