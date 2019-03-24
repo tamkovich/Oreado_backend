@@ -39,20 +39,19 @@ class AuthAPI(APIView):
             return Response(str(err))
 
         credentials_data = {
-            "token": request.POST["accessToken"],
-            "scopes": request.POST["scopes"],
-            "client_id": request.POST["clientID"],
-            "refresh_token": request.POST["refreshToken"],
+            "token": post_data["accessToken"],
+            "scopes": post_data["scopes"],
+            "client_id": post_data["clientID"],
+            "refresh_token": post_data["refreshToken"],
             "token_uri": settings.AUTH_CONFIG['token_uri'],
             "client_secret": settings.AUTH_CONFIG['client_secret'],
         }
         credentials = google.oauth2.credentials.Credentials(**credentials_data)
-        print(credentials.valid)
         mail = Gmail(creds=credentials)
-        print(mail.list_labels(456))
-        print(mail)
 
-        user, created = User.objects.get_or_create(email=post_data["email"])
+        user, created = User.objects.get_or_create(
+            email=post_data["email"], username=post_data["email"]
+        )
 
         password = make_password(
             50, post_data["email"] + datetime.now().strftime("%Y%m%d%H%S")
@@ -62,7 +61,7 @@ class AuthAPI(APIView):
 
         Credential.objects.get_or_create(
             user=user,
-            email=request.POST["email"],
+            email=post_data["email"],
             defaults={'credentials': credentials_data}
         )
 
