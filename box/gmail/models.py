@@ -231,7 +231,7 @@ class Gmail:
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
             else:
                 count += 1
-                res["owner_id"] = self.owner.id
+                res["owner_id"] = self.owner
                 Mail.objects.create(**res)
                 self.messages.append(message)
                 self.html_messages.append(text_body)
@@ -256,7 +256,7 @@ class Gmail:
                 count_messages=count_messages,
                 page_token=page_token,
             )
-            need_more = self.list_messages_common_data(
+            need_more = self.list_messages_common_data_by_user_id(
                 user_id,
                 messages_ids[count_messages-100:] if iteration > 0 else messages_ids,
             )

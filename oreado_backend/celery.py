@@ -67,6 +67,7 @@ def load_mails_for_user(credentials_data, cred_id, user_id):
     mail = Gmail(creds=credentials, owner=cred_id)
 
     mail.list_messages_one_step("me", count_messages=100)
+
     mail_sender_active_by_user_id.delay(user_id)
 
 
