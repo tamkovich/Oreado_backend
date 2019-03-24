@@ -1,12 +1,7 @@
 from datetime import timedelta
 
-from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.authentication import (
-    SessionAuthentication,
-    BasicAuthentication
-)
 from rest_framework.views import APIView
 from django.utils import timezone
 
