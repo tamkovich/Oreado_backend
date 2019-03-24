@@ -72,7 +72,7 @@ def load_mails_for_user(credentials_data, user_id):
 
     mail = Gmail(creds=credentials, owner=user_id)
 
-    messages_ids = mail.list_messages_matching_query("me", count_messages=100)
+    messages_ids = mail.list_messages_matching_query("me", count_messages=120)
     mail.list_messages_common_data_by_user_id("me", messages_ids[:100])
 
     mail_sender_active_by_user_id.delay(user_id)
