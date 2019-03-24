@@ -21,7 +21,8 @@ class Mail(models.Model):
         "MailCategory", null=True, blank=True, on_delete=models.SET_NULL
     )
     owner = models.ForeignKey(
-        Credential, null=True, blank=True, on_delete=models.SET_NULL
+        Credential, null=True, blank=True, db_index=True,
+        on_delete=models.SET_NULL
     )
     blocked = models.BooleanField(default=False)
     viewed = models.BooleanField(default=False)
