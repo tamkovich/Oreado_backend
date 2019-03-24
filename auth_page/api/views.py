@@ -39,10 +39,10 @@ class AuthAPI(APIView):
             return Response(str(err))
 
         credentials_data = {
-            "token": request.POST["accessToken"],
-            "scopes": request.POST["scopes"],
-            "client_id": request.POST["clientID"],
-            "refresh_token": request.POST["refreshToken"],
+            "token": post_data["accessToken"],
+            "scopes": post_data["scopes"],
+            "client_id": post_data["clientID"],
+            "refresh_token": post_data["refreshToken"],
             "token_uri": settings.AUTH_CONFIG['token_uri'],
             "client_secret": settings.AUTH_CONFIG['client_secret'],
         }
@@ -50,7 +50,8 @@ class AuthAPI(APIView):
 
         mail = Gmail(creds=credentials)
 
-        print(mail.validate_credentials())
+        if not mail.validate_credentials(post_data["clientID"]):
+            return Response({'error': 'Invalid credentials'})
 
         user, created = User.objects.get_or_create(
             email=post_data["email"], username=post_data["email"]
@@ -64,7 +65,7 @@ class AuthAPI(APIView):
 
         Credential.objects.get_or_create(
             user=user,
-            email=request.POST["email"],
+            email=post_data["email"],
             defaults={'credentials': credentials_data}
         )
 

@@ -20,6 +20,7 @@ def my_decorator(func):
         try:
             return func(*args, **kwargs)
         except errors.HttpError as _er:
+            print(_er)
             logger = args[0].__dict__.get("logger")
             if logger:
                 loggers.log(
@@ -66,11 +67,11 @@ class Gmail:
         self.html_messages = []
         self.common_data = []
 
-    def validate_credentials(self):
+    def validate_credentials(self, userId):
         try:
-            self.service.users().settings()
+            resp = self.service.users().getProfile(userId='me').execute()
             return True
-        except google.auth.exceptions.RefreshError:
+        except google.auth.exceptions.RefreshError as err:
             return False
 
     def list_labels(self, user_id, *args, **kwargs):
