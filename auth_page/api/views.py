@@ -47,12 +47,14 @@ class AuthAPI(APIView):
             "client_secret": settings.AUTH_CONFIG['client_secret'],
         }
         credentials = google.oauth2.credentials.Credentials(**credentials_data)
-        print(credentials.valid)
-        mail = Gmail(creds=credentials)
-        print(mail.list_labels(456))
-        print(mail)
 
-        user, created = User.objects.get_or_create(email=post_data["email"])
+        mail = Gmail(creds=credentials)
+
+        print(mail.validate_credentials())
+
+        user, created = User.objects.get_or_create(
+            email=post_data["email"], username=post_data["email"]
+        )
 
         password = make_password(
             50, post_data["email"] + datetime.now().strftime("%Y%m%d%H%S")

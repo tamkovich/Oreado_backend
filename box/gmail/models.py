@@ -2,6 +2,8 @@ import base64
 import email
 import loggers
 
+import google.auth.exceptions
+
 from apiclient import errors
 from bs4 import BeautifulSoup
 from googleapiclient.discovery import build
@@ -64,6 +66,13 @@ class Gmail:
         self.html_messages = []
         self.common_data = []
 
+    def validate_credentials(self):
+        try:
+            self.service.users().settings()
+            return True
+        except google.auth.exceptions.RefreshError:
+            return False
+
     def list_labels(self, user_id, *args, **kwargs):
         """
         List all labels of the user's mailbox
@@ -71,7 +80,6 @@ class Gmail:
         :return: <list> List of Labels. Note that the
           returned list contains Labels IDs.
         """
-        print(dir(self.service))
         results = (
             self.service.users()
             .labels()
