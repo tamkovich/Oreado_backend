@@ -43,11 +43,6 @@ NEWS_DIGEST_ID = 3
 INFO_MESSAGE_ID = 3
 
 
-@app.task(bind=True)
-def debug_task(self):
-    print("Request: {0!r}".format(self.request))
-
-
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     # Calls load_mails() every 10 minutes.
@@ -62,8 +57,7 @@ def load_mails():
             creds=google.oauth2.credentials.Credentials(**cred.credentials),
             owner=cred
         )
-        messages_ids = mail.list_messages_matching_query("me", count_messages=200)
-        mail.list_messages_common_data("me", messages_ids[:200])
+        mail.list_messages_one_step("me", count_messages=100)
 
 
 @app.task
@@ -72,9 +66,7 @@ def load_mails_for_user(credentials_data, cred_id, user_id):
 
     mail = Gmail(creds=credentials, owner=cred_id)
 
-    messages_ids = mail.list_messages_matching_query("me", count_messages=120)
-    mail.list_messages_common_data_by_user_id("me", messages_ids[:120])
-
+    mail.list_messages_one_step("me", count_messages=100)
     mail_sender_active_by_user_id.delay(user_id)
 
 
@@ -153,7 +145,6 @@ def classify_mail_category(user_id):
 def add_cleaned_data_to_mail():
     for mail in Mail.objects.all():
         if not mail.cleaned_date:
-            print(mail.date)
             data = mail.date.split(',')
             if len(data) == 1:
                 data = data[0].strip()
