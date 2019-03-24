@@ -67,8 +67,69 @@ def load_mails():
 
 
 @app.task
-def classify_mail_category():
-    mails = Mail.objects.filter(category__isnull=True)
+def load_mails_for_user(credentials_data, user_id):
+    credentials = google.oauth2.credentials.Credentials(**credentials_data)
+
+    mail = Gmail(creds=credentials, owner=user_id)
+
+    messages_ids = mail.list_messages_matching_query("me", count_messages=100)
+    mail.list_messages_common_data_by_user_id("me", messages_ids[:100])
+
+    mail_sender_active_by_user_id.delay(user_id)
+
+
+@app.task
+def mail_sender_active_by_user_id(user_id):
+    DATA = {}
+
+    user = User.objects.get(id=user_id)
+    all_mails = Mail.objects.filter(owner__user=user)
+
+    html_bodies = []
+
+    tags = {i: [] for i in range(len(all_mails))}
+
+    for ind, mail in enumerate(all_mails):
+        html = '<div>' + clean_text_main(mail.html_body) + '</div>'
+        rec_tag(ind, BeautifulSoup(html, 'html.parser'), tags)
+
+        html = delete_extra_text(tags[ind])
+        html_bodies.append(' '.join(html))
+
+    if len(html_bodies):
+        predictions = loaded_model.predict(html_bodies)
+
+        for mail, prediction in zip(all_mails, predictions):
+            mail.category_id = prediction
+            mail.save()
+
+    for mail in all_mails:
+        if f"{user.id}-{mail.come_from}" in DATA:
+            DATA[f"{user.id}-{mail.come_from}"].append(mail.category_id)
+        else:
+            DATA[f"{user.id}-{mail.come_from}"] = []
+
+    for key, value in DATA.items():
+        if not len(value):
+            continue
+        digest_percent = value.count(NEWS_DIGEST_ID) / len(value)
+        info_percent = value.count(INFO_MESSAGE_ID) / len(value)
+
+        average = (digest_percent + info_percent) / 2
+
+        MailSender.objects.update_or_create(
+            name=key.split('-')[1], user_id=key.split('-')[0],
+            defaults={
+                'is_active': True if average >= 0.5 else False,
+                'average': average,
+                'mail_count': len(value)
+            }
+        )
+
+
+@app.task
+def classify_mail_category(user_id):
+    mails = Mail.objects.filter(owner__user_id=user_id)
 
     html_bodies = []
 

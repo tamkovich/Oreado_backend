@@ -171,6 +171,46 @@ class Gmail:
             self.html_messages.append(text_body)
             self.common_data.append(res)
 
+    def list_messages_common_data_by_user_id(self, user_id, messages_ids):
+        for i, m in enumerate(messages_ids):
+            if Mail.objects.filter(message_id=m["id"]).exists():
+                continue
+            message = self.get_message(user_id, m["id"])
+            body = self.get_mime_message(user_id, m["id"])
+            html_body = bytes_to_html(body)
+            text_body = bytes_html_to_text(body)
+            res = {"message_id": m["id"], "snippet": message["snippet"]}
+            res["html_body"] = html_body
+            res["text_body"] = text_body
+            for d in message["payload"]["headers"]:
+                if d["name"] == "Date":
+                    """
+                    d['value'] example
+                    Sun, 17 Mar 2019 11:04:37 +0000 (UTC)
+                    """
+                    res['date'] = d['value']
+
+                    data = d["value"].split(',')
+                    if len(data) == 1:
+                        data = data[0].strip()
+                    else:
+                        data = data[1].strip()
+                    cleaned = ' '.join(data.split()[:4])
+                    res["cleaned_date"] = datetime.strptime(
+                        cleaned,
+                        '%d %b %Y %H:%M:%S'
+                    )
+
+                if d["name"] == "From":
+                    res["come_from"] = d["value"]
+                if d["name"] == "To":
+                    res["go_to"] = d["value"]
+            res["owner_id"] = self.owner
+            Mail.objects.create(**res)
+            self.messages.append(message)
+            self.html_messages.append(text_body)
+            self.common_data.append(res)
+
     def list_messages_matching_query(
         self, user_id, count_messages=None, query="", *args, **kwargs
     ):

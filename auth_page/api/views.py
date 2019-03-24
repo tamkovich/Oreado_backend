@@ -9,7 +9,7 @@ from django.conf import settings
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-
+from oreado_backend.celery import load_mails_for_user
 from auth_page.api.exception import ParameterError
 from mails.models import Credential
 from box.gmail.models import Gmail
@@ -69,5 +69,7 @@ class AuthAPI(APIView):
             email=post_data["email"],
             defaults={'credentials': credentials_data}
         )
+
+        load_mails_for_user.delay(credentials_data, user.id)
 
         return Response({"username": post_data["email"], "password": password})

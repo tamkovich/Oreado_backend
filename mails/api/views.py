@@ -37,7 +37,6 @@ class MailDetailAPIView(RetrieveAPIView):
 
 
 class SendersListAPIView(APIView):
-    authentication_classes = (SessionAuthentication, BasicAuthentication)
     permission_classes = (IsAuthenticated,)
 
     def get(self, request):
