@@ -1,6 +1,7 @@
 from oreado_backend.wsgi import application
 
 import os
+import re
 import pickle
 
 import google.oauth2.credentials
@@ -16,7 +17,6 @@ from auth_page.models import Credential
 from mails.models import MailSender
 from box.gmail.models import Gmail
 from mails.models import Mail
-from clean import clean_text_main, rec_tag, delete_extra_text
 
 
 User = get_user_model()
@@ -79,14 +79,11 @@ def mail_sender_active_by_user_id(user_id):
 
     html_bodies = []
 
-    tags = {i: [] for i in range(len(all_mails))}
-
     for ind, mail in enumerate(all_mails):
-        html = '<div>' + clean_text_main(mail.html_body) + '</div>'
-        rec_tag(ind, BeautifulSoup(html, 'html.parser'), tags)
-
-        html = delete_extra_text(tags[ind])
-        html_bodies.append(' '.join(html))
+        html = ''.join(
+            re.findall(r'</?[a-z]\w*\b|>', mail.html_body, flags=re.I | re.M)
+        )
+        html_bodies.append(html)
 
     if len(html_bodies):
         predictions = loaded_model.predict(html_bodies)
@@ -117,7 +114,7 @@ def mail_sender_active_by_user_id(user_id):
                 'mail_count': len(value)
             }
         )
-    return DATA
+    return
 
 
 @app.task
