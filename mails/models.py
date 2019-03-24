@@ -10,6 +10,7 @@ User = get_user_model()
 class Mail(models.Model):
     message_id = models.CharField(max_length=100)
     date = models.CharField(max_length=100)
+    cleaned_date = models.DateTimeField(blank=True, null=True, default=None)
     come_from = models.CharField(max_length=100)
     go_to = models.CharField(max_length=100)
     text_body = models.TextField()

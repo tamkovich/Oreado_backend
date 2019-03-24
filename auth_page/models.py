@@ -7,7 +7,9 @@ User = get_user_model()
 
 
 class Credential(models.Model):
-    user = models.ForeignKey(User, blank=True, null=True, on_delete=models.SET_NULL)
+    user = models.ForeignKey(
+        User, blank=True, null=True, on_delete=models.SET_NULL
+    )
 
     email = models.EmailField(null=True)
     credentials = JSONField()

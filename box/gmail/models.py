@@ -6,6 +6,7 @@ import google.auth.exceptions
 
 from apiclient import errors
 from bs4 import BeautifulSoup
+from datetime import datetime
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
@@ -67,7 +68,7 @@ class Gmail:
         self.html_messages = []
         self.common_data = []
 
-    def validate_credentials(self, userId):
+    def validate_credentials(self):
         try:
             resp = self.service.users().getProfile(userId='me').execute()
             return True
@@ -143,7 +144,15 @@ class Gmail:
             res["text_body"] = text_body
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
-                    res["date"] = d["value"]
+                    """
+                    d['value'] example
+                    Sun, 17 Mar 2019 11:04:37 +0000 (UTC)
+                    """
+                    res['date'] = d['value']
+                    res["cleaned_date"] = datetime.strptime(
+                        d["value"].split(',')[1].strip().split('+')[0].strip(),
+                        '%d %b %Y %H:%M:%S'
+                    )
                 if d["name"] == "From":
                     res["come_from"] = d["value"]
                 if d["name"] == "To":

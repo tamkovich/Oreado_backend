@@ -50,7 +50,7 @@ class AuthAPI(APIView):
 
         mail = Gmail(creds=credentials)
 
-        if not mail.validate_credentials(post_data["clientID"]):
+        if not mail.validate_credentials():
             return Response({'error': 'Invalid credentials'})
 
         user, created = User.objects.get_or_create(
@@ -62,6 +62,7 @@ class AuthAPI(APIView):
         )
 
         user.set_password(password)
+        user.save()
 
         Credential.objects.get_or_create(
             user=user,

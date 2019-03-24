@@ -5,6 +5,8 @@ import pickle
 
 import google.oauth2.credentials
 
+from datetime import datetime
+
 from django.contrib.auth import get_user_model
 
 from bs4 import BeautifulSoup
@@ -84,6 +86,17 @@ def classify_mail_category():
     for mail, prediction in zip(mails, predictions):
         mail.category_id = prediction
         mail.save()
+
+
+@app.task
+def add_cleaned_data_to_mail():
+    for mail in Mail.objects.all():
+        if not mail.cleaned_date:
+            mail.cleaned_date = datetime.strptime(
+                mail.date.split(',')[1].strip().split('+')[0].strip(),
+                '%d %b %Y %H:%M:%S'
+            )
+            mail.save()
 
 
 @app.task
