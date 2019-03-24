@@ -1,18 +1,23 @@
 import base64
 import email
 import loggers
+import re
 
 import google.auth.exceptions
 
 from apiclient import errors
-from bs4 import BeautifulSoup
+from datetime import datetime
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
 from mails.models import Mail
 from oreado_backend import settings
-from utils.preproccessor import bytes_to_html, bytes_html_to_text
+from utils.preproccessor import (
+    bytes_to_html,
+    bytes_html_to_text,
+    scrap_mail_from_text,
+)
 
 
 def my_decorator(func):
@@ -20,7 +25,6 @@ def my_decorator(func):
         try:
             return func(*args, **kwargs)
         except errors.HttpError as _er:
-            print(_er)
             logger = args[0].__dict__.get("logger")
             if logger:
                 loggers.log(
@@ -144,10 +148,13 @@ class Gmail:
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
                     res["date"] = d["value"]
+                    res["date_mail"] = datetime.strptime(d["value"][5:25], '%d %b %Y %H:%M:%S')
                 if d["name"] == "From":
                     res["come_from"] = d["value"]
+                    res["come_from_email"] = scrap_mail_from_text(d["value"])
                 if d["name"] == "To":
                     res["go_to"] = d["value"]
+                    res["go_to_email"] = scrap_mail_from_text(d["value"])
             res["owner_id"] = self.owner.id
             Mail.objects.create(**res)
             self.messages.append(message)

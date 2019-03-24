@@ -41,11 +41,6 @@ NEWS_DIGEST_ID = 3
 INFO_MESSAGE_ID = 3
 
 
-@app.task(bind=True)
-def debug_task(self):
-    print("Request: {0!r}".format(self.request))
-
-
 @app.on_after_configure.connect
 def setup_periodic_tasks(sender, **kwargs):
     # Calls load_mails() every 10 minutes.
