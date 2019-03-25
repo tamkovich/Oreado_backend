@@ -48,6 +48,8 @@ class MailSender(models.Model):
 
     is_active = models.BooleanField()
 
+    selected = models.BooleanField(default=False)
+
     class Meta:
         db_table = 'mail_sender'
 

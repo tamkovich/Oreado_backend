@@ -51,3 +51,18 @@ class SendersListAPIView(APIView):
             user=request.user, is_active=True
         )
         return Response({'data': senders.values('id', 'name')})
+
+    def post(self, request):
+        ids = request.data.get('selected_senders')
+        if not ids:
+            return Response({'error': 'You must pass "selected_senders"'})
+        for inner_id in ids:
+            try:
+                sender = MailSender.objects.get(id=inner_id)
+            except MailSender.DoesNotExist:
+                return Response({'error': f'Invalid id {inner_id}'})
+
+            sender.selected = True
+            sender.save()
+
+        return Response({'ok': True})
