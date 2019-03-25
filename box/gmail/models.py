@@ -192,7 +192,7 @@ class Gmail:
         return need_more
 
     def list_messages_common_data_by_user_id(self, user_id, messages_ids):
-        a_week_ago = datetime.now() - timedelta(days=7)
+        a_week_ago = datetime.now() - timedelta(days=30)
         need_more = True
         count = 0
         for i, m in enumerate(messages_ids):
