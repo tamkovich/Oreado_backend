@@ -10,17 +10,17 @@ class MailListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mail
         fields = [
-            'date',
-            'come_from',
-            'text_body',
-            'snippet',
-            'viewed',
-            'favourite',
-            'uri'
+            "date",
+            "come_from",
+            "text_body",
+            "snippet",
+            "viewed",
+            "favourite",
+            "uri",
         ]
 
     def get_uri(self, obj):
-        request = self.context.get('request')
+        request = self.context.get("request")
         return api_reverse("api-mails:detail", kwargs={"pk": obj.id}, request=request)
 
 
@@ -30,15 +30,15 @@ class MailDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Mail
         fields = [
-            'date',
-            'come_from',
-            'text_body',
-            'snippet',
-            'viewed',
-            'favourite',
-            'uri'
+            "date",
+            "come_from",
+            "text_body",
+            "snippet",
+            "viewed",
+            "favourite",
+            "uri",
         ]
 
     def get_uri(self, obj):
-        request = self.context.get('request')
+        request = self.context.get("request")
         return api_reverse("api-mails:detail", kwargs={"pk": obj.id}, request=request)
