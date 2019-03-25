@@ -108,7 +108,7 @@ def mail_sender_active_by_user_id(user_id):
         average = (digest_percent + info_percent) / 2
 
         MailSender.objects.update_or_create(
-            name=key.split('-')[1], user_id=key.split('-')[0],
+            name='-'.join(key.split('-')[1:]), user_id=key.split('-')[0],
             defaults={
                 'is_active': True if average >= 0.5 else False,
                 'average': average,
