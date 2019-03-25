@@ -17,7 +17,7 @@ class MailListAPIView(APIView):
     def get(self, request):
         mails = Mail.objects.filter(
             owner__user=request.user,
-            cleaned_date__gte=timezone.now() + timedelta(7),
+            cleaned_date__gte=timezone.now() - timedelta(7),
             viewed=False,
             category_id__in=[3, 2]
         ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body')
