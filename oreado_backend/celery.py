@@ -4,6 +4,8 @@ import os
 import re
 import pickle
 
+import loggers
+
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
@@ -51,7 +53,7 @@ def load_mails():
     credentials = Credential.objects.all()
     for cred in credentials:
         try:
-            mail = credentials_data_to_gmail(cred.credentials)  # ToDo delete * Charfield 250 box models self.owner.id if ... tre except load mails
+            mail = credentials_data_to_gmail(cred.credentials)
             mail.list_messages_one_step("me", count_messages=100)
         except Exception as err:
             print(err)
@@ -59,7 +61,12 @@ def load_mails():
 
 @app.task
 def load_mails_for_user(credentials_data, cred_id, user_id):
-    mail = credentials_data_to_gmail(credentials_data, owner=cred_id)
+
+    mail = credentials_data_to_gmail(
+        credentials_data,
+        owner=cred_id,
+        logger=loggers.get_logger('load_mails_for_user')
+    )
 
     mail.list_messages_one_step("me", count_messages=100)
     mail_sender_active_by_user_id.delay(user_id)

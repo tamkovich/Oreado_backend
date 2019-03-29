@@ -19,7 +19,6 @@ def post_param_filter_decorator(*fields):
     return func_decorator
 
 
-def credentials_data_to_gmail(credentials_data, validate=False, owner=None):
+def credentials_data_to_gmail(credentials_data, validate=False, owner=None, logger=None):
     credentials = google.oauth2.credentials.Credentials(**credentials_data)
-    return Gmail(creds=credentials, owner=owner)
-
+    return Gmail(creds=credentials, owner=owner, logger=logger)
