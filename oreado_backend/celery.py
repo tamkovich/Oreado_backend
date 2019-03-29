@@ -4,18 +4,15 @@ import os
 import re
 import pickle
 
-import google.oauth2.credentials
-
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
 
-from bs4 import BeautifulSoup
 from celery import Celery
 
+from shortcuts.shortcuts import credentials_data_to_gmail
 from auth_page.models import Credential
 from mails.models import MailSender
-from box.gmail.models import Gmail
 from mails.models import Mail
 
 
@@ -53,18 +50,13 @@ def setup_periodic_tasks(sender, **kwargs):
 def load_mails():
     credentials = Credential.objects.all()
     for cred in credentials:
-        mail = Gmail(
-            creds=google.oauth2.credentials.Credentials(**cred.credentials),
-            owner=cred
-        )
+        mail = credentials_data_to_gmail(**cred.credentials)
         mail.list_messages_one_step("me", count_messages=100)
 
 
 @app.task
 def load_mails_for_user(credentials_data, cred_id, user_id):
-    credentials = google.oauth2.credentials.Credentials(**credentials_data)
-
-    mail = Gmail(creds=credentials, owner=cred_id)
+    mail = credentials_data_to_gmail(credentials_data)
 
     mail.list_messages_one_step("me", count_messages=100)
 

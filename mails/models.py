@@ -29,6 +29,32 @@ class Mail(models.Model):
     viewed = models.BooleanField(default=False)
     favourite = models.BooleanField(default=False)
 
+    @classmethod
+    def get_mails_by_user_senders(cls, user, mail_senders, **kwargs):
+        return cls.objects.filter(
+            owner__user=user,
+            category_id__in=[3, 2],
+            come_from__in=mail_senders,
+            **kwargs
+        ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body')
+
+    @staticmethod
+    def process_mail(mails):
+        return [
+            {
+                'id': mail['id'],
+                'cleaned_date': mail['cleaned_date'],
+                'come_from': mail['come_from'],
+                'snippet': mail['snippet'],
+                'text_body': mail['text_body'][:150],
+            } for mail in mails
+        ]
+
+    def mark_as_true(self, attr):
+        setattr(self, attr, True)
+        self.save()
+        return True
+
 
 class MailCategory(models.Model):
     name = models.CharField(max_length=200)
@@ -55,6 +81,18 @@ class MailSender(models.Model):
 
         verbose_name = 'Mail sender'
         verbose_name_plural = 'Mail senders'
+
+    @classmethod
+    def get_senders_name_for_user(cls, user):
+        return MailSender.objects.filter(
+            user=user, is_active=True, selected=True
+        ).values_list('name', flat=True)
+
+    @classmethod
+    def get_active_senders_for_user(cls, user):
+        return cls.objects.filter(
+            user=user, is_active=True
+        ).values('id', 'name')
 
     def __str__(self):
         return f"{self.name}"
