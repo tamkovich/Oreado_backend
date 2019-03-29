@@ -8,13 +8,13 @@ User = get_user_model()
 
 
 class Mail(models.Model):
-    message_id = models.CharField(max_length=100)
-    date = models.CharField(max_length=100)
+    message_id = models.CharField(max_length=250)
+    date = models.CharField(max_length=250)
     cleaned_date = models.DateTimeField(blank=True, null=True, default=None)
-    come_from = models.CharField(max_length=100)
-    come_from_email = models.CharField(max_length=100, blank=True, null=True)
-    go_to = models.CharField(max_length=100)
-    go_to_email = models.CharField(max_length=100, blank=True, null=True)
+    come_from = models.CharField(max_length=250)
+    come_from_email = models.CharField(max_length=250, blank=True, null=True)
+    go_to = models.CharField(max_length=250)
+    go_to_email = models.CharField(max_length=250, blank=True, null=True)
     text_body = models.TextField()
     html_body = models.TextField()
     tag_body = models.TextField()
@@ -57,16 +57,16 @@ class Mail(models.Model):
 
 
 class MailCategory(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=250)
     slug = models.SlugField(blank=True)
-    css_class = models.CharField(max_length=30)
+    css_class = models.CharField(max_length=250)
 
     def __str__(self):
         return self.name
 
 
 class MailSender(models.Model):
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=250)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     average = models.FloatField(default=1)
