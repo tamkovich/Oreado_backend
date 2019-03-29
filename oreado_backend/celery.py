@@ -51,7 +51,7 @@ def load_mails():
     credentials = Credential.objects.all()
     for cred in credentials:
         try:
-            mail = credentials_data_to_gmail(**cred.credentials)
+            mail = credentials_data_to_gmail(cred.credentials)
             mail.list_messages_one_step("me", count_messages=100)
         except Exception as err:
             print(err)
