@@ -80,6 +80,11 @@ def mail_sender_active_by_user_id(user_id):
 
     html_bodies = []
 
+    mail_senders = MailSender.objects.filter(user=user, is_active=True)
+    for mail_sender in mail_senders:
+        mail_sender.is_active = False
+        mail_sender.save()
+
     for ind, mail in enumerate(all_mails):
         html = ''.join(
             re.findall(r'</?[a-z]\w*\b|>', mail.html_body, flags=re.I | re.M)
