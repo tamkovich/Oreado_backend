@@ -412,7 +412,9 @@ class Gmail:
         loggers.log(logger=self.logger, level="INFO", msg=message["labelIds"])
         try:
             msg_str = base64.urlsafe_b64decode(message["raw"]).decode("utf-8")
-        except:
+        except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError):
+            loggers.log(logger=self.logger, level="INFO", msg=message["raw"])
+
             msg_str = ''
         mime_msg = email.message_from_string(msg_str)
 
