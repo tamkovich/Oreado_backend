@@ -410,8 +410,10 @@ class Gmail:
             .execute()
         )
         loggers.log(logger=self.logger, level="INFO", msg=message["labelIds"])
-        msg_str = base64.urlsafe_b64decode(message["raw"]).decode("utf-8")
-
+        try:
+            msg_str = base64.urlsafe_b64decode(message["raw"]).decode("utf-8")
+        except:
+            msg_str = ''
         mime_msg = email.message_from_string(msg_str)
 
         if mime_msg.is_multipart():
