@@ -52,11 +52,12 @@ def setup_periodic_tasks(sender, **kwargs):
 def load_mails():
     credentials = Credential.objects.all()
     for cred in credentials:
-        try:
-            mail = credentials_data_to_gmail(cred.credentials)
-            mail.list_messages_one_step("me", count_messages=100)
-        except Exception as err:
-            print(err)
+        mail = credentials_data_to_gmail(
+            cred.credentials,
+            owner=cred,
+            logger=loggers.get_logger('load_mails')
+        )
+        mail.list_messages_one_step("me", count_messages=100)
 
 
 @app.task
