@@ -50,7 +50,7 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @app.task
 def load_mails():
-    credentials = Credential.objects.all()
+    credentials = Credential.objects.filter(is_active=True)
     for cred in credentials:
         mail = credentials_data_to_gmail(
             cred.credentials,
@@ -60,7 +60,8 @@ def load_mails():
         if mail.validate_credentials():
             mail.list_messages_one_step("me", count_messages=100)
         else:
-            mail.is_active = False
+            cred.is_active = False
+            cred.save()
 
 
 @app.task
@@ -74,8 +75,6 @@ def load_mails_for_user(credentials_data, cred_id, user_id):
     if mail.validate_credentials():
         mail.list_messages_one_step("me", count_messages=100)
         mail_sender_active_by_user_id.delay(user_id)
-    else:
-        mail.is_active = False
 
 
 @app.task
