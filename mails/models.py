@@ -55,6 +55,9 @@ class Mail(models.Model):
         self.save()
         return True
 
+    def __str__(self):
+        return f"{self.go_to} {self.come_from} {self.text_body[:30]}"
+
 
 class MailCategory(models.Model):
     name = models.CharField(max_length=250)
