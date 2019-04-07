@@ -1,67 +1,78 @@
 from datetime import timedelta
 
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.views import APIView
 from django.utils import timezone
 
+from shortcuts.shortcuts import post_param_filter_decorator
 from mails.api.serializers import MailDetailSerializer
-from mails.models import Mail
+from mails.api.permissions import BasePermission
+from mails.api.views_shortcuts import (
+    mail_senders_decorator,
+    get_mail_or_404
+)
+from mails.models import Mail, MailSender
 
-from mails.models import MailSender
 
-
-class MailListAPIView(APIView):
-    permission_classes = (IsAuthenticated,)
-
-    def get(self, request):
-        mail_senders = MailSender.objects.filter(
-            user=request.user, is_active=True, selected=True
-        ).values_list('name', flat=True)
-
-        mails = Mail.objects.filter(
-            owner__user=request.user,
+class MailAPIView(BasePermission):
+    @mail_senders_decorator
+    def get(self, request, **kwargs):
+        mails = Mail.get_mails_by_user_senders(
+            request.user, kwargs['mail_senders'],
             cleaned_date__gte=timezone.now() - timedelta(7),
             viewed=False,
-            category_id__in=[3, 2],
-            come_from__in=mail_senders
-        ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body')
+        )
+        mails = Mail.process_mail(mails)
+        return Response({'data': mails})
 
-        data_to_send = []
+    @post_param_filter_decorator('mail_id')
+    def post(self, request):
+        mail = get_mail_or_404(request.data['mail_id'])
+        mail.mark_as_true('viewed')
+        return Response({'ok': True})
 
-        for mail in mails:
-            data_to_send.append({
-                'id': mail['id'],
-                'cleaned_date': mail['cleaned_date'],
-                'come_from': mail['come_from'],
-                'snippet': mail['snippet'],
-                'text_body': mail['text_body'][:150],
-            })
+
+class FavoriteMailAPIView(BasePermission):
+    @mail_senders_decorator
+    def get(self, request, **kwargs):
+        mails = Mail.get_mails_by_user_senders(
+            request.user, kwargs['mail_senders'],
+            favourite=True,
+        )
+        mails = Mail.process_mail(mails)
+        return Response({'data': mails})
+
+    @post_param_filter_decorator('mail_id')
+    def post(self, request):
+        mail = get_mail_or_404(request.data['mail_id'])
+        mail.mark_as_true('favourite')
+        return Response({'ok': True})
+
+
+class ArchiveMailAPIView(BasePermission):
+    @mail_senders_decorator
+    def get(self, request, **kwargs):
+        mails = Mail.get_mails_by_user_senders(
+            request.user, kwargs['mail_senders'],
+            cleaned_date__lte=timezone.now() - timedelta(7),
+        )
+        mails = Mail.process_mail(mails)
         return Response({'data': mails})
 
 
-class MailDetailAPIView(APIView):
-    permission_classes = (IsAuthenticated,)
-
+class MailDetailAPIView(BasePermission):
     def get(self, request, pk):
         mail = Mail.objects.get(id=pk)
         return Response({'data': MailDetailSerializer(mail).data})
 
 
-class SendersListAPIView(APIView):
-    permission_classes = (IsAuthenticated,)
-
+class SendersListAPIView(BasePermission):
     def get(self, request):
-        senders = MailSender.objects.filter(
-            user=request.user, is_active=True
-        )
-        return Response({'data': senders.values('id', 'name')})
+        senders = MailSender.get_active_senders_for_user(request.user)
+        return Response({'data': senders})
 
+    @post_param_filter_decorator('selected_senders')
     def post(self, request):
-        ids = request.data.get('selected_senders')
-        if not ids:
-            return Response({'error': 'You must pass "selected_senders"'})
-        for inner_id in ids:
+        for inner_id in request.data['selected_senders']:
             try:
                 sender = MailSender.objects.get(id=inner_id)
             except MailSender.DoesNotExist:
@@ -69,5 +80,4 @@ class SendersListAPIView(APIView):
 
             sender.selected = True
             sender.save()
-
         return Response({'ok': True})

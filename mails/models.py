@@ -8,13 +8,13 @@ User = get_user_model()
 
 
 class Mail(models.Model):
-    message_id = models.CharField(max_length=100)
-    date = models.CharField(max_length=100)
+    message_id = models.CharField(max_length=250)
+    date = models.CharField(max_length=250)
     cleaned_date = models.DateTimeField(blank=True, null=True, default=None)
-    come_from = models.CharField(max_length=100)
-    come_from_email = models.CharField(max_length=100, blank=True, null=True)
-    go_to = models.CharField(max_length=100)
-    go_to_email = models.CharField(max_length=100, blank=True, null=True)
+    come_from = models.CharField(max_length=250)
+    come_from_email = models.CharField(max_length=250, blank=True, null=True)
+    go_to = models.CharField(max_length=250)
+    go_to_email = models.CharField(max_length=250, blank=True, null=True)
     text_body = models.TextField()
     html_body = models.TextField()
     tag_body = models.TextField()
@@ -29,18 +29,47 @@ class Mail(models.Model):
     viewed = models.BooleanField(default=False)
     favourite = models.BooleanField(default=False)
 
+    @classmethod
+    def get_mails_by_user_senders(cls, user, mail_senders, **kwargs):
+        return cls.objects.filter(
+            owner__user=user,
+            category_id__in=[3, 2],
+            come_from__in=mail_senders,
+            **kwargs
+        ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body')
+
+    @staticmethod
+    def process_mail(mails):
+        return [
+            {
+                'id': mail['id'],
+                'cleaned_date': mail['cleaned_date'],
+                'come_from': mail['come_from'],
+                'snippet': mail['snippet'],
+                'text_body': mail['text_body'],
+            } for mail in mails
+        ]
+
+    def mark_as_true(self, attr):
+        setattr(self, attr, True)
+        self.save()
+        return True
+
+    def __str__(self):
+        return f"{self.go_to} {self.come_from} {self.text_body[:30]}"
+
 
 class MailCategory(models.Model):
-    name = models.CharField(max_length=200)
+    name = models.CharField(max_length=250)
     slug = models.SlugField(blank=True)
-    css_class = models.CharField(max_length=30)
+    css_class = models.CharField(max_length=250)
 
     def __str__(self):
         return self.name
 
 
 class MailSender(models.Model):
-    name = models.CharField(max_length=150)
+    name = models.CharField(max_length=250)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     average = models.FloatField(default=1)
@@ -55,6 +84,18 @@ class MailSender(models.Model):
 
         verbose_name = 'Mail sender'
         verbose_name_plural = 'Mail senders'
+
+    @classmethod
+    def get_senders_name_for_user(cls, user):
+        return MailSender.objects.filter(
+            user=user, is_active=True, selected=True
+        ).values_list('name', flat=True)
+
+    @classmethod
+    def get_active_senders_for_user(cls, user):
+        return cls.objects.filter(
+            user=user, is_active=True
+        ).values('id', 'name')
 
     def __str__(self):
         return f"{self.name}"

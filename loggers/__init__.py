@@ -38,5 +38,16 @@ def log(logger, **kwargs):
      - **kwargs
     :return: None
     """
+    kwargs['level'] = LEVELS.get(kwargs.get('level'))
     if logger:
         logger.log(**kwargs)
+
+
+LEVELS = {
+    'CRITICAL': 50,
+    'ERROR': 40,
+    'WARNING': 30,
+    'INFO': 20,
+    'DEBUG': 10,
+    'NOTSET': 0,
+}

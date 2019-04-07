@@ -1,5 +1,3 @@
-import google.oauth2.credentials
-
 from datetime import datetime
 
 from django.contrib.auth.hashers import make_password
@@ -10,65 +8,54 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from oreado_backend.celery import load_mails_for_user
-from auth_page.api.exception import ParameterError
 from mails.models import Credential
-from box.gmail.models import Gmail
+
+from shortcuts.shortcuts import (
+    post_param_filter_decorator,
+    credentials_data_to_gmail
+)
 
 User = get_user_model()
 
 
 class AuthAPI(APIView):
     @staticmethod
-    def param_validation(data, *args):
-        for arg in args:
-            if arg not in data:
-                raise ParameterError({"error": f"You must pass {arg}"})
-
-    def post(self, request):
-        post_data = request.data
-        try:
-            self.param_validation(
-                post_data,
-                "accessToken",
-                "clientID",
-                "refreshToken",
-                "scopes",
-                "email"
-            )
-        except ParameterError as err:
-            return Response(str(err))
-
-        credentials_data = {
-            "token": post_data["accessToken"],
-            "scopes": post_data["scopes"],
-            "client_id": post_data["clientID"],
-            "refresh_token": post_data["refreshToken"],
+    def request_data_to_credentials_data(data):
+        return {
+            "token": data["accessToken"],
+            "scopes": data["scopes"],
+            "client_id": data["clientID"],
+            "refresh_token": data["refreshToken"],
             "token_uri": settings.AUTH_CONFIG['token_uri'],
             "client_secret": settings.AUTH_CONFIG['client_secret'],
         }
-        credentials = google.oauth2.credentials.Credentials(**credentials_data)
 
-        mail = Gmail(creds=credentials)
+    @post_param_filter_decorator(
+        'accessToken', 'clientID', 'refreshToken', 'scopes', 'email'
+    )
+    def post(self, request):
+        credentials_data = self.request_data_to_credentials_data(request.data)
+        mail = credentials_data_to_gmail(credentials_data)
 
         if not mail.validate_credentials():
             return Response({'error': 'Invalid credentials'})
 
         user, created = User.objects.get_or_create(
-            email=post_data["email"], username=post_data["email"]
+            email=request.data["email"], username=request.data["email"]
         )
-
         password = make_password(
-            50, post_data["email"] + datetime.now().strftime("%Y%m%d%H%S")
+            50, request.data["email"] + datetime.now().strftime("%Y%m%d%H%S")
         )
-
         user.set_password(password)
         user.save()
 
         cred, created = Credential.objects.get_or_create(
             user=user,
-            email=post_data["email"],
+            email=request.data["email"],
             defaults={'credentials': credentials_data}
         )
         load_mails_for_user.delay(credentials_data, cred.id, user.id)
 
-        return Response({"username": post_data["email"], "password": password})
+        return Response(
+            {"username": request.data["email"], "password": password}
+        )

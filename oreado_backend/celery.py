@@ -4,18 +4,17 @@ import os
 import re
 import pickle
 
-import google.oauth2.credentials
+import loggers
 
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
 
-from bs4 import BeautifulSoup
 from celery import Celery
 
+from shortcuts.shortcuts import credentials_data_to_gmail
 from auth_page.models import Credential
 from mails.models import MailSender
-from box.gmail.models import Gmail
 from mails.models import Mail
 
 
@@ -51,24 +50,31 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @app.task
 def load_mails():
-    credentials = Credential.objects.all()
+    credentials = Credential.objects.filter(is_active=True)
     for cred in credentials:
-        mail = Gmail(
-            creds=google.oauth2.credentials.Credentials(**cred.credentials),
-            owner=cred
+        mail = credentials_data_to_gmail(
+            cred.credentials,
+            owner=cred,
+            logger=loggers.get_logger('load_mails')
         )
-        mail.list_messages_one_step("me", count_messages=100)
+        if mail.validate_credentials():
+            mail.list_messages_one_step("me", count_messages=100)
+        else:
+            cred.is_active = False
+            cred.save()
 
 
 @app.task
 def load_mails_for_user(credentials_data, cred_id, user_id):
-    credentials = google.oauth2.credentials.Credentials(**credentials_data)
 
-    mail = Gmail(creds=credentials, owner=cred_id)
-
-    mail.list_messages_one_step("me", count_messages=100)
-
-    mail_sender_active_by_user_id.delay(user_id)
+    mail = credentials_data_to_gmail(
+        credentials_data,
+        owner=cred_id,
+        logger=loggers.get_logger('load_mails_for_user')
+    )
+    if mail.validate_credentials():
+        mail.list_messages_one_step("me", count_messages=100)
+        mail_sender_active_by_user_id.delay(user_id)
 
 
 @app.task
@@ -79,6 +85,11 @@ def mail_sender_active_by_user_id(user_id):
     all_mails = Mail.objects.filter(owner__user=user)
 
     html_bodies = []
+
+    mail_senders = MailSender.objects.filter(user=user, is_active=True)
+    for mail_sender in mail_senders:
+        mail_sender.is_active = False
+        mail_sender.save()
 
     for ind, mail in enumerate(all_mails):
         html = ''.join(

@@ -3,6 +3,11 @@ from django.contrib import admin
 from mails.models import Mail, MailCategory, MailSender
 
 
-admin.site.register(Mail)
+class MailAdmin(admin.ModelAdmin):
+    search_fields = ('message_id', 'come_from', 'go_to', 'text_body')
+
+
+admin.site.register(Mail, MailAdmin)
+
 admin.site.register(MailSender)
 admin.site.register(MailCategory)

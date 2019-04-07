@@ -12,7 +12,7 @@ from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
-from mails.models import Mail
+from mails.models import Mail, Credential
 from oreado_backend import settings
 from utils.preproccessor import (
     bytes_to_html,
@@ -70,6 +70,11 @@ class Gmail:
             self.service = build(
                 settings.API_SERVICE_NAME, settings.API_VERSION, credentials=creds
             )
+        loggers.log(
+            logger=self.logger,
+            level="INFO",
+            msg="Just initialized"
+        )
         self.owner = owner
         self.messages = []
         self.html_messages = []
@@ -182,7 +187,10 @@ class Gmail:
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
             else:
                 count += 1
-                res["owner_id"] = self.owner.id
+                if isinstance(self.owner, int):
+                    res["owner_id"]
+                elif isinstance(self.owner, Credential):
+                    res["owner_id"] = self.owner.id
                 Mail.objects.create(**res)
                 self.messages.append(message)
                 self.html_messages.append(text_body)
@@ -409,8 +417,21 @@ class Gmail:
             .execute()
         )
         loggers.log(logger=self.logger, level="INFO", msg=message["labelIds"])
-        msg_str = base64.urlsafe_b64decode(message["raw"]).decode("utf-8")
+        try:
+            msg_str = base64.urlsafe_b64decode(message["raw"]).decode("utf-8")
+        except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError) as _er:
+            loggers.log(
+                logger=self.logger,
+                level="INFO",
+                msg=message["raw"]
+            )
+            loggers.log(
+                logger=self.logger,
+                level="ERROR",
+                msg=f"method=get_mime_message An error occurred: {_er}",
+            )
 
+            msg_str = ''
         mime_msg = email.message_from_string(msg_str)
 
         if mime_msg.is_multipart():
