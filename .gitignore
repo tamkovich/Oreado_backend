@@ -10,6 +10,7 @@ __pycache__/
 .Python
 .idea/
 private/config.yaml
+private/client_secret.json
 build/
 develop-eggs/
 dist/
