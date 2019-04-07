@@ -1,8 +1,5 @@
 import os
 
-from private import *
-
-
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -14,9 +11,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = "ydzwnw83^a7ju67-4(eutj^y^fc&=_b-e!(5cx9z&c&5#i%s3n"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
-ALLOWED_HOSTS = ["oreadobackend.ml", "68.183.75.150", "localhost", "127.0.0.1"]
+ALLOWED_HOSTS = ['*']
 
 
 # Application definition
@@ -30,6 +27,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.sites",
     "rest_framework",
+
     "auth_page",
     "mails",
 ]
@@ -71,13 +69,13 @@ WSGI_APPLICATION = "oreado_backend.wsgi.application"
 # https://docs.djangoproject.com/en/2.1/ref/settings/#databases
 
 DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql_psycopg2",
-        "NAME": DB_CONFIG["name"],
-        "USER": DB_CONFIG["user"],
-        "PASSWORD": DB_CONFIG["password"],
-        "HOST": DB_CONFIG["host"],
-        "PORT": DB_CONFIG['port'],
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'oreado_backend_db',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
+        'HOST': 'localhost',
+        'PORT': '5432',
     }
 }
 
