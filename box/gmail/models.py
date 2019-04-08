@@ -6,16 +6,17 @@ from threading import Thread
 
 import google.auth.exceptions
 
-from django.contrib.auth import get_user_model
 from apiclient import errors
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from datetime import datetime, timedelta
-from django.utils import timezone
+
 from googleapiclient.discovery import build
 from httplib2 import Http
 from oauth2client import file, client, tools
 
 from mails.models import Mail, Credential
-from oreado_backend import settings
 from utils.preproccessor import (
     bytes_to_html,
     bytes_html_to_text,
@@ -293,7 +294,7 @@ class Gmail:
             text_body = bytes_html_to_text(body)
             res = {"message_id": messages_ids[ind]["id"], "snippet": message["snippet"]}
             res["html_body"] = html_body
-            res["text_body"] = text_body
+            res["text_body"] = text_body.replace('=20', '').replace('=A0', '')  # =20 and =A0 specific symbols in mails
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
                     res["date"] = d["value"]
@@ -316,6 +317,9 @@ class Gmail:
                 if d["name"] == "To":
                     res["go_to"] = d["value"]
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
+                if d["name"] == "Subject":
+                    res["go_to"] = d["value"]
+                    res["go_to_email"] = d["value"]
             else:
                 count += 1
                 res["owner_id"] = (self.owner if isinstance(self.owner, int)

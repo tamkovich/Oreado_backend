@@ -1,11 +1,10 @@
 import uuid
-import requests
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
 
 from django.conf import settings
-from django.http import HttpResponseRedirect, HttpResponse
+from django.http import HttpResponseRedirect
 from django.shortcuts import redirect
 from django.urls import reverse
 from django.contrib.sites.models import Site

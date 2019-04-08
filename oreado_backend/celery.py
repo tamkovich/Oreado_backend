@@ -19,23 +19,14 @@ from mails.models import Mail
 
 User = get_user_model()
 
-# set the default Django settings module for the 'celery' program.
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "oreado_backend.settings")
-
 app = Celery("oreado_backend")
-
-# Using a string here means the worker doesn't have to serialize
-# the configuration object to child processes.
-# - namespace='CELERY' means all celery-related configuration keys
-#   should have a `CELERY_` prefix.
 app.config_from_object("django.conf:settings", namespace="CELERY")
-
-# Load task modules from all registered Django app configs.
 app.autodiscover_tasks()
 
 
+MODEL_FILENAME = 'finalized_model3.sav'  # ToDo: load every model from the `ml_models` repo or kind of that
 
-MODEL_FILENAME = 'finalized_model3.sav'
 loaded_model = pickle.load(open(MODEL_FILENAME, 'rb'))
 
 NEWS_DIGEST_ID = 3
@@ -50,14 +41,18 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @app.task
 def load_mails():
-    credentials = Credential.objects.all()
+    credentials = Credential.objects.filter(is_active=True)
     for cred in credentials:
         mail = credentials_data_to_gmail(
             cred.credentials,
             owner=cred,
             logger=loggers.get_logger('load_mails')
         )
-        mail.list_messages_one_step("me", count_messages=100)
+        if mail.validate_credentials():
+            mail.list_messages_one_step("me", count_messages=100)
+        else:
+            cred.is_active = False
+            cred.save()
 
 
 @app.task
@@ -67,9 +62,9 @@ def load_mails_for_user(credentials_data, cred_id, user_id):
         owner=cred_id,
         logger=loggers.get_logger('load_mails_for_user')
     )
-
-    mail.list_messages_one_step("me", count_messages=100)
-    mail_sender_active_by_user_id.delay(user_id)
+    if mail.validate_credentials():
+        mail.list_messages_one_step("me", count_messages=100)
+        mail_sender_active_by_user_id.delay(user_id)
 
 
 @app.task
