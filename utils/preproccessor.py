@@ -23,7 +23,11 @@ def bytes_to_html(content):
     :param content: <bytes> html response
     :return: <str> html content
     """
-    return str(BeautifulSoup(content, features="html.parser"))
+    # ToDo: logging all errors
+    try:
+        return str(BeautifulSoup(content, features="html.parser"))
+    except UnboundLocalError:
+        return ''
 
 
 def bytes_html_to_text(content):

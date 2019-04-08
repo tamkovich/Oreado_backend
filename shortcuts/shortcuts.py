@@ -20,5 +20,6 @@ def post_param_filter_decorator(*fields):
 
 
 def credentials_data_to_gmail(credentials_data, validate=False, owner=None, logger=None):
+    # ToDo: replace all unusebly params & add docstring please
     credentials = google.oauth2.credentials.Credentials(**credentials_data)
     return Gmail(creds=credentials, owner=owner, logger=logger)
