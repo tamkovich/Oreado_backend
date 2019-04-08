@@ -19,6 +19,7 @@ class Mail(models.Model):
     html_body = models.TextField()
     tag_body = models.TextField()
     snippet = models.TextField()
+    subject = models.CharField(max_length=250, blank=True, null=True)  # message title
     category = models.ForeignKey(
         "MailCategory", null=True, blank=True, on_delete=models.SET_NULL
     )
@@ -39,7 +40,7 @@ class Mail(models.Model):
         ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body')
 
     @staticmethod
-    def process_mail(mails):
+    def process_mail(mails):  # ToDo: remove and use serializer for that goal in every place
         return [
             {
                 'id': mail['id'],
@@ -47,6 +48,7 @@ class Mail(models.Model):
                 'come_from': mail['come_from'],
                 'snippet': mail['snippet'],
                 'text_body': mail['text_body'],
+                'subject': mail['subject']
             } for mail in mails
         ]
 

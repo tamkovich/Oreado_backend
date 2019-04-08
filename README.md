@@ -13,12 +13,14 @@ $ sudo -u postgres psql postgres
 ```sh
 $ virtualenv venv
 $ source venv/bin/activate 
+$ export DJANGO_SETTINGS_MODULE=oreado_backend.settings.api_prod
 ```
 ```sh
 (venv) $ pip install -r requirements.txt
 (venv) $ python manage.py migrate
 (venv) $ python manage.py loaddata fixtures/oreado_mail_category.json
 (venv) $ python manage.py runserver 0.0.0.0:8000
+(venv) $ python manage.py runserver --settings=oreado_backend.settings.api_prod
 (venv) $ celery -A oreado_backend worker -l info -B
 ```
 

@@ -1,19 +1,22 @@
+import loggers
 import base64
 import email
-import loggers
+import time
 
 import google.auth.exceptions
 
-from django.contrib.auth import get_user_model
-from apiclient import errors
+
 from datetime import datetime, timedelta
-from django.utils import timezone
-from googleapiclient.discovery import build
-from httplib2 import Http
+
+from django.contrib.auth import get_user_model
+from django.conf import settings
+
 from oauth2client import file, client, tools
+from googleapiclient.discovery import build
+from apiclient import errors
+from httplib2 import Http
 
 from mails.models import Mail, Credential
-from oreado_backend import settings
 from utils.preproccessor import (
     bytes_to_html,
     bytes_html_to_text,
@@ -56,6 +59,8 @@ class Gmail:
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
+        self.data = {}
+
         self.logger = logger
         if not creds:
             store = file.Storage(settings.EMAIL["GMAIL"]["TOKEN"])
@@ -70,6 +75,7 @@ class Gmail:
             self.service = build(
                 settings.API_SERVICE_NAME, settings.API_VERSION, credentials=creds
             )
+
         loggers.log(
             logger=self.logger,
             level="INFO",
@@ -151,7 +157,7 @@ class Gmail:
         a_week_ago = datetime.now() - timedelta(days=7)
         need_more = True
         count = 0
-        for i, m in enumerate(messages_ids):
+        for m in messages_ids:
             if Mail.objects.filter(message_id=m["id"]).exists():
                 continue
             if not need_more:
@@ -199,22 +205,86 @@ class Gmail:
             return False
         return need_more
 
+    def get_message_process(self, request_id, response, exception):
+        if request_id in self.data:
+            self.data[request_id][0] = response
+        else:
+            self.data[request_id] = [response, None]
+
+        loggers.log(
+            logger=self.logger,
+            level="INFO",
+            msg=f'Message: {response}',
+        )
+        return response
+
+    def get_mime_message_process(self, request_id, response, exception):
+        request_id = str(int(request_id) - 1)
+
+        if not response:
+            return
+
+        loggers.log(logger=self.logger, level="INFO", msg=response["labelIds"])
+        try:
+            msg_str = base64.urlsafe_b64decode(response["raw"]).decode("utf-8")
+        except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError) as _er:
+            loggers.log(
+                logger=self.logger,
+                level="ERROR",
+                msg=f"method=get_mime_message An error occurred: {_er}",
+            )
+
+            msg_str = ''
+        mime_msg = email.message_from_string(msg_str)
+
+        if mime_msg.is_multipart():
+            for part in mime_msg.walk():
+                ctype = part.get_content_type()
+                cdispo = str(part.get("text/html"))
+                if ctype == "text/html" and "attachment" not in cdispo:
+                    body = part.get_payload(decode=True)
+                    if request_id in self.data:
+                        self.data[request_id][1] = body
+                    else:
+                        self.data[request_id] = [None, body]
+                    return body
+
+        if request_id in self.data:
+            self.data[request_id][1] = mime_msg.get_payload()
+        else:
+            self.data[request_id] = [None, mime_msg.get_payload()]
+        return mime_msg.get_payload()
+
     def list_messages_common_data_by_user_id(self, user_id, messages_ids):
-        a_week_ago = datetime.now() - timedelta(days=30)
-        need_more = True
+        a_week_ago = datetime.now() - timedelta(days=10)
         count = 0
-        for i, m in enumerate(messages_ids):
+
+        need_more = True
+
+        batch = self.service.new_batch_http_request()
+
+        for m in messages_ids:
             if Mail.objects.filter(message_id=m["id"]).exists():
                 continue
             if not need_more:
                 break
-            message = self.get_message(user_id, m["id"])
-            body = self.get_mime_message(user_id, m["id"])
+            batch.add(self.service.users().messages().get(userId=user_id, id=m['id']), callback=self.get_message_process)
+            batch.add(self.service.users().messages().get(userId=user_id, id=m['id'], format="raw"), callback=self.get_mime_message_process)
+
+        batch.execute(http=self.service._http)
+
+        for ind, (key, value) in enumerate(self.data.items()):
+            message = value[0]
+            body = value[1]
+
+            if not message or not body:
+                continue
+
             html_body = bytes_to_html(body)
             text_body = bytes_html_to_text(body)
-            res = {"message_id": m["id"], "snippet": message["snippet"]}
+            res = {"message_id": messages_ids[ind]["id"], "snippet": message["snippet"]}
             res["html_body"] = html_body
-            res["text_body"] = text_body
+            res["text_body"] = text_body.replace('=20', '').replace('=A0', '')  # =20 and =A0 specific symbols in mails
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
                     res["date"] = d["value"]
@@ -237,27 +307,42 @@ class Gmail:
                 if d["name"] == "To":
                     res["go_to"] = d["value"]
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
+                if d["name"] == "Subject":
+                    res["go_to"] = d["value"]
+                    res["go_to_email"] = d["value"]
             else:
                 count += 1
                 res["owner_id"] = (self.owner if isinstance(self.owner, int)
                                    else self.owner.id)
 
-                Mail.objects.create(**res)
                 self.messages.append(message)
                 self.html_messages.append(text_body)
                 self.common_data.append(res)
+
+                message_id = res['message_id']
+                del res['message_id']
+                Mail.objects.get_or_create(
+                    message_id=message_id, defaults=res
+                )
+
+        self.data = {}
         if count == 0:
             return False
         return need_more
 
-    def list_messages_one_step(
-            self,
-            user_id,
-            count_messages=None,
-    ):
+    def list_messages_one_step(self, user_id, count_messages=None):
         iteration = 0
         page_token = None
         need_more = True
+
+        start = time.time()
+
+        loggers.log(
+            logger=self.logger,
+            level="INFO",
+            msg='START',
+        )
+
         while True and need_more:
             if iteration > 0:
                 count_messages += 100
@@ -271,6 +356,12 @@ class Gmail:
                 messages_ids[count_messages-100:] if iteration > 0 else messages_ids,
             )
             iteration += 1
+
+        loggers.log(
+            logger=self.logger,
+            level="INFO",
+            msg=f'END {time.time()-start}',
+        )
 
     def list_messages_matching_query(
         self, user_id, count_messages=None, query="", page_token=None, *args, **kwargs
@@ -387,10 +478,10 @@ class Gmail:
         Returns:
           A Message.
         """
+
         message = (
             self.service.users().messages().get(userId=user_id, id=msg_id).execute()
         )
-
         loggers.log(
             logger=self.logger,
             level="INFO",
