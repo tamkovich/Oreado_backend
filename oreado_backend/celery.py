@@ -5,7 +5,6 @@ import re
 import pickle
 
 import loggers
-
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
@@ -35,6 +34,7 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks()
 
 
+
 MODEL_FILENAME = 'finalized_model3.sav'
 loaded_model = pickle.load(open(MODEL_FILENAME, 'rb'))
 
@@ -62,7 +62,6 @@ def load_mails():
 
 @app.task
 def load_mails_for_user(credentials_data, cred_id, user_id):
-
     mail = credentials_data_to_gmail(
         credentials_data,
         owner=cred_id,

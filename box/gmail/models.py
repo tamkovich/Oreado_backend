@@ -1,6 +1,8 @@
+import asyncio
 import base64
 import email
 import loggers
+from threading import Thread
 
 import google.auth.exceptions
 
@@ -56,6 +58,8 @@ class Gmail:
         # The file token.json stores the user's access and refresh tokens, and is
         # created automatically when the authorization flow completes for the first
         # time.
+        self.DATA = {}
+
         self.logger = logger
         if not creds:
             store = file.Storage(settings.EMAIL["GMAIL"]["TOKEN"])
@@ -70,6 +74,12 @@ class Gmail:
             self.service = build(
                 settings.API_SERVICE_NAME, settings.API_VERSION, credentials=creds
             )
+
+            print(self.service._http)
+            print(self.service._model)
+            print(self.service._requestBuilder)
+            print(self.service._schema)
+
         loggers.log(
             logger=self.logger,
             level="INFO",
@@ -199,20 +209,89 @@ class Gmail:
             return False
         return need_more
 
+    def get_message_process(self, request_id, response, exception):
+        if request_id in self.DATA:
+            self.DATA[request_id][0] = response
+        else:
+            self.DATA[request_id] = [response, None]
+
+        # loggers.log(
+        #     logger=self.logger,
+        #     level="INFO",
+        #     msg=f'Message: {response}',
+        # )
+        return response
+
+    def get_mime_message_process(self, request_id, response, exception):
+        request_id = str(int(request_id) - 1)
+
+        if not response:
+            return
+
+        loggers.log(logger=self.logger, level="INFO", msg=response["labelIds"])
+        try:
+            msg_str = base64.urlsafe_b64decode(response["raw"]).decode("utf-8")
+        except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError) as _er:
+            # loggers.log(
+            #     logger=self.logger,
+            #     level="INFO",
+            #     msg=response
+            # )
+            loggers.log(
+                logger=self.logger,
+                level="ERROR",
+                msg=f"method=get_mime_message An error occurred: {_er}",
+            )
+
+            msg_str = ''
+        mime_msg = email.message_from_string(msg_str)
+
+        if mime_msg.is_multipart():
+            for part in mime_msg.walk():
+                ctype = part.get_content_type()
+                cdispo = str(part.get("text/html"))
+                if ctype == "text/html" and "attachment" not in cdispo:
+                    body = part.get_payload(decode=True)
+                    if request_id in self.DATA:
+                        self.DATA[request_id][1] = body
+                    else:
+                        self.DATA[request_id] = [None, body]
+                    return body
+
+        if request_id in self.DATA:
+            self.DATA[request_id][1] = mime_msg.get_payload()
+        else:
+            self.DATA[request_id] = [None, mime_msg.get_payload()]
+        return mime_msg.get_payload()
+
     def list_messages_common_data_by_user_id(self, user_id, messages_ids):
-        a_week_ago = datetime.now() - timedelta(days=30)
-        need_more = True
+        a_week_ago = datetime.now() - timedelta(days=10)
         count = 0
+
+        need_more = True
+
+        batch = self.service.new_batch_http_request()
+
         for i, m in enumerate(messages_ids):
-            if Mail.objects.filter(message_id=m["id"]).exists():
-                continue
+            # if Mail.objects.filter(message_id=m["id"]).exists():
+            #     continue
             if not need_more:
                 break
-            message = self.get_message(user_id, m["id"])
-            body = self.get_mime_message(user_id, m["id"])
+            batch.add(self.service.users().messages().get(userId=user_id, id=m['id']), callback=self.get_message_process)
+            batch.add(self.service.users().messages().get(userId=user_id, id=m['id'], format="raw"), callback=self.get_mime_message_process)
+
+        batch.execute(http=self.service._http)
+
+        for ind, (key, value) in enumerate(self.DATA.items()):
+            message = value[0]
+            body = value[1]
+
+            if not message or not body:
+                continue
+
             html_body = bytes_to_html(body)
             text_body = bytes_html_to_text(body)
-            res = {"message_id": m["id"], "snippet": message["snippet"]}
+            res = {"message_id": messages_ids[ind]["id"], "snippet": message["snippet"]}
             res["html_body"] = html_body
             res["text_body"] = text_body
             for d in message["payload"]["headers"]:
@@ -242,10 +321,17 @@ class Gmail:
                 res["owner_id"] = (self.owner if isinstance(self.owner, int)
                                    else self.owner.id)
 
-                Mail.objects.create(**res)
                 self.messages.append(message)
                 self.html_messages.append(text_body)
                 self.common_data.append(res)
+
+                message_id = res['message_id']
+                del res['message_id']
+                Mail.objects.get_or_create(
+                    message_id=message_id, defaults=res
+                )
+
+        self.DATA = {}
         if count == 0:
             return False
         return need_more
@@ -258,6 +344,9 @@ class Gmail:
         iteration = 0
         page_token = None
         need_more = True
+        import time
+        start = time.time()
+        print('START')
         while True and need_more:
             if iteration > 0:
                 count_messages += 100
@@ -271,6 +360,8 @@ class Gmail:
                 messages_ids[count_messages-100:] if iteration > 0 else messages_ids,
             )
             iteration += 1
+        print(time.time()-start)
+        print('END')
 
     def list_messages_matching_query(
         self, user_id, count_messages=None, query="", page_token=None, *args, **kwargs
@@ -387,10 +478,10 @@ class Gmail:
         Returns:
           A Message.
         """
+
         message = (
             self.service.users().messages().get(userId=user_id, id=msg_id).execute()
         )
-
         loggers.log(
             logger=self.logger,
             level="INFO",
@@ -398,6 +489,30 @@ class Gmail:
         )
 
         return message
+
+    def get_message_many(self, user_id, messages):
+        """Get a Message with given ID.
+
+        Args:
+          user_id: User's email address. The special value "me"
+          can be used to indicate the authenticated user.
+          msg_id: The ID of the Message required.
+
+        Returns:
+          A Message.
+        """
+        for message in messages:
+            message = (
+                self.service.users().messages().get(userId=user_id, id=message['id']).execute()
+            )
+
+            loggers.log(
+                logger=self.logger,
+                level="INFO",
+                msg=f'Message snippet: {message["snippet"]}',
+            )
+
+        return
 
     def get_mime_message(self, user_id, msg_id):
         """Get a Message and use it to create a MIME Message.
@@ -442,6 +557,53 @@ class Gmail:
                     body = part.get_payload(decode=True)
                     return body
         return mime_msg.get_payload()
+
+    def get_mime_message_many(self, user_id, messages):
+        """Get a Message and use it to create a MIME Message.
+
+        Args:
+          user_id: User's email address. The special value "me"
+          can be used to indicate the authenticated user.
+          msg_id: The ID of the Message required.
+
+        Returns:
+          A MIME Message, consisting of data from Message.
+        """
+
+        for message in messages:
+            message = (
+                self.service.users()
+                .messages()
+                .get(userId=user_id, id=message['id'], format="raw")
+                .execute()
+            )
+            loggers.log(logger=self.logger, level="INFO", msg=message["labelIds"])
+            try:
+                msg_str = base64.urlsafe_b64decode(message["raw"]).decode("utf-8")
+            except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError) as _er:
+                loggers.log(
+                    logger=self.logger,
+                    level="INFO",
+                    msg=message["raw"]
+                )
+                loggers.log(
+                    logger=self.logger,
+                    level="ERROR",
+                    msg=f"method=get_mime_message An error occurred: {_er}",
+                )
+
+                msg_str = ''
+            mime_msg = email.message_from_string(msg_str)
+
+            if mime_msg.is_multipart():
+                for part in mime_msg.walk():
+                    ctype = part.get_content_type()
+                    cdispo = str(part.get("text/html"))
+                    if ctype == "text/html" and "attachment" not in cdispo:
+                        body = part.get_payload(decode=True)
+                        return body
+            payload = mime_msg.get_payload()
+        return
 
     def get_user_info(self, user_id):
         data = self.service.users().getProfile(userId=user_id)
