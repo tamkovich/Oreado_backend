@@ -5,7 +5,6 @@ import re
 import pickle
 
 import loggers
-
 from datetime import datetime
 
 from django.contrib.auth import get_user_model
@@ -27,6 +26,7 @@ app.autodiscover_tasks()
 
 
 MODEL_FILENAME = 'finalized_model3.sav'  # ToDo: load every model from the `ml_models` repo or kind of that
+
 loaded_model = pickle.load(open(MODEL_FILENAME, 'rb'))
 
 NEWS_DIGEST_ID = 3
@@ -57,7 +57,6 @@ def load_mails():
 
 @app.task
 def load_mails_for_user(credentials_data, cred_id, user_id):
-
     mail = credentials_data_to_gmail(
         credentials_data,
         owner=cred_id,
