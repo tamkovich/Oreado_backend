@@ -215,7 +215,7 @@ class Gmail:
             text_body = bytes_html_to_text(body)
             res = {"message_id": m["id"], "snippet": message["snippet"]}
             res["html_body"] = html_body
-            res["text_body"] = text_body.replace('=20', '').replace('=A0', '')  # =20 and =A0 specific symbols in mails
+            res["text_body"] = text_body.replace('=20', '').replace('=A0', '').replace('=0A', '').replace('=0D', '')  # =20 and =A0 specific symbols in mails
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
                     res["date"] = d["value"]
