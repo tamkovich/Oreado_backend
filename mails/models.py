@@ -32,11 +32,12 @@ class Mail(models.Model):
 
     @classmethod
     def get_mails_by_user_senders(cls, user, mail_senders, **kwargs):
+        # ToDo: add docstring
+        # ToDo: remove not used params **kwargs
         return cls.objects.filter(
             owner__user=user,
             category_id__in=[3, 2],
-            come_from__in=mail_senders,
-            **kwargs
+            come_from__in=mail_senders
         ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body')
 
     @staticmethod
@@ -53,6 +54,7 @@ class Mail(models.Model):
         ]
 
     def mark_as_true(self, attr):
+        # ToDo: add docstring
         setattr(self, attr, True)
         self.save()
         return True
@@ -89,15 +91,17 @@ class MailSender(models.Model):
 
     @classmethod
     def get_senders_name_for_user(cls, user):
+        # ToDo: add docstring
         return MailSender.objects.filter(
             user=user, is_active=True, selected=True
         ).values_list('name', flat=True)
 
     @classmethod
     def get_active_senders_for_user(cls, user):
+        # ToDo: add docstring
         return cls.objects.filter(
             user=user, is_active=True
         ).values('id', 'name')
 
     def __str__(self):
-        return f"{self.name}"
+        return self.name
