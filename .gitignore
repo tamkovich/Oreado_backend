@@ -9,7 +9,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 .idea/
-private/
+private/config.yaml
+private/client_secret.json
 build/
 develop-eggs/
 dist/

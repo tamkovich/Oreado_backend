@@ -5,7 +5,6 @@ import time
 
 import google.auth.exceptions
 
-
 from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
