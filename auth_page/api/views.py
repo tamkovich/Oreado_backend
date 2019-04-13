@@ -8,7 +8,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from oreado_backend.celery import load_mails_for_user
-from mails.models import Credential
+from auth_page.models import Credential
 
 from shortcuts.shortcuts import (
     post_param_filter_decorator,

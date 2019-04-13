@@ -21,6 +21,7 @@ from utils.preproccessor import (
     bytes_html_to_text,
     scrap_mail_from_text,
 )
+from shortcuts.shortcuts import replace_email_symbols
 
 
 User = get_user_model()
@@ -43,6 +44,7 @@ def my_decorator(func):
 
 
 def for_all_methods(decorator):
+    # ToDo: replace all decorators to the shortcuts or utils module
     def decorate(cls):
         for attr in cls.__dict__:  # there's propably a better way to do this
             if callable(getattr(cls, attr)):
@@ -81,13 +83,15 @@ class Gmail:
             msg="Just initialized"
         )
         self.owner = owner
+        # ToDo: replace this lists because there do not actually need
         self.messages = []
         self.html_messages = []
         self.common_data = []
 
     def validate_credentials(self):
+        # ToDo: add docstring
         try:
-            resp = self.service.users().getProfile(userId='me').execute()
+            _ = self.service.users().getProfile(userId='me').execute()
             return True
         except google.auth.exceptions.RefreshError as err:
             return False
@@ -99,10 +103,11 @@ class Gmail:
         :return: <list> List of Labels. Note that the
           returned list contains Labels IDs.
         """
+        # ToDo: create everywhere docstrings with the same format
         results = (
             self.service.users()
             .labels()
-            .list(userId=user_id, *args, **kwargs)
+            .list(userId=user_id, *args)
             .execute()
         )
         return results.get("labels", [])
@@ -114,12 +119,13 @@ class Gmail:
         :param messages_ids: <list> list contains Message IDs
         :return: <list> List of Messages Json content.
         """
+        # ToDo: create everywhere docstrings with the same format
+        # ToDo: remove not used params **kwargs
         return list(
             map(
                 lambda m: self.get_message(user_id, m["id"]),
                 messages_ids,
                 *args,
-                **kwargs,
             )
         )
 
@@ -130,8 +136,10 @@ class Gmail:
         :param messages_ids: <list> list contains Message IDs
         :return: <list> List of Messages Json content.
         """
+        # ToDo: create everywhere docstrings with the same format
+        # ToDo: remove not used params **kwargs
         return list(
-            map(lambda m: self.get_message(user_id, m), messages_ids, *args, **kwargs)
+            map(lambda m: self.get_message(user_id, m), messages_ids, *args)
         )
 
     def list_messages_content(self, user_id, messages_ids):
@@ -141,6 +149,7 @@ class Gmail:
         :param messages_ids: <list> list contains Message IDs,
         :return: <list> List of Messages content.
         """
+        # ToDo: create everywhere docstrings with the same format
         return list(
             map(
                 lambda m: bytes_to_html(self.get_mime_message(user_id, m["id"])),
@@ -148,11 +157,8 @@ class Gmail:
             )
         )
 
-    def list_messages_common_data(
-            self,
-            user_id,
-            messages_ids,
-    ):
+    def list_messages_common_data(self, user_id, messages_ids):
+        # ToDo: add docstring or replace
         a_week_ago = datetime.now() - timedelta(days=7)
         need_more = True
         count = 0
@@ -165,7 +171,7 @@ class Gmail:
             body = self.get_mime_message(user_id, m["id"])
             html_body = bytes_to_html(body)
             text_body = bytes_html_to_text(body)
-            res = {"message_id": m["id"], "snippet": message["snippet"]}
+            res = dict(message_id=m["id"], snippet=message["snippet"])
             res["html_body"] = html_body
             res["text_body"] = text_body
             for d in message["payload"]["headers"]:
@@ -192,11 +198,13 @@ class Gmail:
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
             else:
                 count += 1
+                # ToDo: replace everywhere this 2 isinstance logic with 1
                 if isinstance(self.owner, int):
-                    res["owner_id"]
+                    res["owner_id"] = self.owner
                 elif isinstance(self.owner, Credential):
                     res["owner_id"] = self.owner.id
-                Mail.objects.create(**res)
+                Mail.objects.get_or_create(message_id=m["id"], defaults=res)
+                # ToDo: replace this lists because there do not actually need
                 self.messages.append(message)
                 self.html_messages.append(text_body)
                 self.common_data.append(res)
@@ -205,6 +213,8 @@ class Gmail:
         return need_more
 
     def get_message_process(self, request_id, response, exception):
+        # ToDo: remove not used params with *args, **kwargs
+        # ToDo: add docstring
         if request_id in self.data:
             self.data[request_id][0] = response
         else:
@@ -218,6 +228,8 @@ class Gmail:
         return response
 
     def get_mime_message_process(self, request_id, response, exception):
+        # ToDo: remove not used params with *args, **kwargs
+        # ToDo: add docstring
         request_id = str(int(request_id) - 1)
 
         if not response:
@@ -255,6 +267,7 @@ class Gmail:
         return mime_msg.get_payload()
 
     def list_messages_common_data_by_user_id(self, user_id, messages_ids):
+        # ToDo: add docstring or replace
         a_week_ago = datetime.now() - timedelta(days=10)
         count = 0
 
@@ -281,9 +294,9 @@ class Gmail:
 
             html_body = bytes_to_html(body)
             text_body = bytes_html_to_text(body)
-            res = {"message_id": messages_ids[ind]["id"], "snippet": message["snippet"]}
+            res = dict(message_id=messages_ids[ind]["id"], snippet=message["snippet"])
             res["html_body"] = html_body
-            res["text_body"] = text_body.replace('=20', '').replace('=A0', '')  # =20 and =A0 specific symbols in mails
+            res["text_body"] = replace_email_symbols(text_body)  # specific symbols in mails
             for d in message["payload"]["headers"]:
                 if d["name"] == "Date":
                     res["date"] = d["value"]
@@ -320,9 +333,7 @@ class Gmail:
 
                 message_id = res['message_id']
                 del res['message_id']
-                Mail.objects.get_or_create(
-                    message_id=message_id, defaults=res
-                )
+                Mail.objects.get_or_create(message_id=message_id, defaults=res)
 
         self.data = {}
         if count == 0:
@@ -330,6 +341,7 @@ class Gmail:
         return need_more
 
     def list_messages_one_step(self, user_id, count_messages=None):
+        # ToDo: add docstring or replace
         iteration = 0
         page_token = None
         need_more = True
@@ -378,6 +390,7 @@ class Gmail:
           returned list contains Message IDs, you must use get with the
           appropriate ID to get the details of a Message.
         """
+        # ToDo: create everywhere docstrings with the same format
         if page_token:
             response = (
                 self.service.users()
@@ -388,14 +401,13 @@ class Gmail:
                     q=query,
                     pageToken=page_token,
                     *args,
-                    **kwargs,
                 ).execute()
             )
         else:
             response = (
                 self.service.users()
                 .messages()
-                .list(userId=user_id, maxResults=count_messages, q=query, *args, **kwargs)
+                .list(userId=user_id, maxResults=count_messages, q=query, *args)
                 .execute()
             )
         messages = []
@@ -414,7 +426,6 @@ class Gmail:
                     q=query,
                     pageToken=response["nextPageToken"],
                     *args,
-                    **kwargs,
                 )
                 .execute()
             )
@@ -438,10 +449,11 @@ class Gmail:
           returned list contains Message IDs, you must use get with the
           appropriate id to get the details of a Message.
         """
+        # ToDo: create everywhere docstrings with the same format
         response = (
             self.service.users()
             .messages()
-            .list(userId=user_id, labelIds=label_ids, *args, **kwargs)
+            .list(userId=user_id, labelIds=label_ids, *args)
             .execute()
         )
         messages = []
@@ -458,7 +470,6 @@ class Gmail:
                     labelIds=label_ids,
                     pageToken=page_token,
                     *args,
-                    **kwargs,
                 )
                 .execute()
             )
@@ -477,7 +488,7 @@ class Gmail:
         Returns:
           A Message.
         """
-
+        # ToDo: create everywhere docstrings with the same format
         message = (
             self.service.users().messages().get(userId=user_id, id=msg_id).execute()
         )
@@ -500,6 +511,7 @@ class Gmail:
         Returns:
           A MIME Message, consisting of data from Message.
         """
+        # ToDo: create everywhere docstrings with the same format
         message = (
             self.service.users()
             .messages()
@@ -534,5 +546,6 @@ class Gmail:
         return mime_msg.get_payload()
 
     def get_user_info(self, user_id):
+        # ToDo: add docstring
         data = self.service.users().getProfile(userId=user_id)
         return data.execute()

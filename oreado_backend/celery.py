@@ -41,6 +41,7 @@ def setup_periodic_tasks(sender, **kwargs):
 
 @app.task
 def load_mails():
+    # ToDo: add docstring
     credentials = Credential.objects.filter(is_active=True)
     for cred in credentials:
         mail = credentials_data_to_gmail(
@@ -57,6 +58,7 @@ def load_mails():
 
 @app.task
 def load_mails_for_user(credentials_data, cred_id, user_id):
+    # ToDo: add docstring
     mail = credentials_data_to_gmail(
         credentials_data,
         owner=cred_id,
@@ -69,7 +71,8 @@ def load_mails_for_user(credentials_data, cred_id, user_id):
 
 @app.task
 def mail_sender_active_by_user_id(user_id):
-    DATA = {}
+    # ToDo: add docstring
+    data = {}
 
     user = User.objects.get(id=user_id)
     all_mails = Mail.objects.filter(owner__user=user)
@@ -95,12 +98,12 @@ def mail_sender_active_by_user_id(user_id):
             mail.save()
 
     for mail in all_mails:
-        if f"{user.id}-{mail.come_from}" in DATA:
-            DATA[f"{user.id}-{mail.come_from}"].append(mail.category_id)
+        if f"{user.id}-{mail.come_from}" in data:
+            data[f"{user.id}-{mail.come_from}"].append(mail.category_id)
         else:
-            DATA[f"{user.id}-{mail.come_from}"] = []
+            data[f"{user.id}-{mail.come_from}"] = []
 
-    for key, value in DATA.items():
+    for key, value in data.items():
         if not len(value):
             continue
         digest_percent = value.count(NEWS_DIGEST_ID) / len(value)
@@ -121,6 +124,7 @@ def mail_sender_active_by_user_id(user_id):
 
 @app.task
 def add_cleaned_data_to_mail():
+    # ToDo: add docstring
     for mail in Mail.objects.all():
         if not mail.cleaned_date:
             data = mail.date.split(',')
@@ -138,7 +142,8 @@ def add_cleaned_data_to_mail():
 
 @app.task
 def mail_sender_active():
-    DATA = {}
+    # ToDo: add docstring
+    data = {}
 
     all_users = User.objects.all()
     all_mails = Mail.objects.all()
@@ -166,12 +171,12 @@ def mail_sender_active():
 
     for user in all_users:
         for mail in all_mails:
-            if f"{user.id}-{mail.come_from}" in DATA:
-                DATA[f"{user.id}-{mail.come_from}"].append(mail.category_id)
+            if f"{user.id}-{mail.come_from}" in data:
+                data[f"{user.id}-{mail.come_from}"].append(mail.category_id)
             else:
-                DATA[f"{user.id}-{mail.come_from}"] = []
+                data[f"{user.id}-{mail.come_from}"] = []
 
-    for key, value in DATA.items():
+    for key, value in data.items():
         if not len(value):
             continue
         digest_percent = value.count(NEWS_DIGEST_ID) / len(value)
@@ -191,4 +196,3 @@ def mail_sender_active():
 
 if __name__ == "__main__":
     app.start()
-

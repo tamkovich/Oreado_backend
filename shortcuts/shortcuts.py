@@ -20,6 +20,18 @@ def post_param_filter_decorator(*fields):
 
 
 def credentials_data_to_gmail(credentials_data, validate=False, owner=None, logger=None):
-    # ToDo: replace all unusebly params & add docstring please
+    # ToDo: replace all unusably params & add docstring please
     credentials = google.oauth2.credentials.Credentials(**credentials_data)
     return Gmail(creds=credentials, owner=owner, logger=logger)
+
+
+def replace_email_symbols(text: str) -> str:
+    """
+    Replace specific for email symbols
+    """
+    # ToDo: find all of those symbols
+    # ToDo: create a logic which can use those symbols in the app frontend view
+    symbols = ['=20', '=A0', '=0A', '=0D']
+    for sym in symbols:
+        text = text.replace(sym, '')
+    return text
