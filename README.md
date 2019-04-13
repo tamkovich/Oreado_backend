@@ -4,7 +4,7 @@
 
 ```sh
 $ git clone https://github.com/jaselnik/Oreado_backend.git
-$ cd Oreado-Dataset
+$ cd Oreado_backend
 ```
 ```sh
 $ sudo -u postgres psql postgres
