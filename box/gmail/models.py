@@ -21,7 +21,7 @@ from utils.preproccessor import (
     bytes_html_to_text,
     scrap_mail_from_text,
 )
-from shortcuts.shortcuts import replace_email_symbols
+from utils.preproccessor import replace_email_symbols
 
 
 User = get_user_model()
