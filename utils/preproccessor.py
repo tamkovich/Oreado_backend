@@ -50,3 +50,15 @@ def scrap_mail_from_text(content: str) -> str or None:
         content
     )
     return res[0] if res else None
+
+
+def replace_email_symbols(text: str) -> str:
+    """
+    Replace specific for email symbols
+    """
+    # ToDo: find all of those symbols
+    # ToDo: create a logic which can use those symbols in the app frontend view
+    symbols = ['=20', '=A0', '=0A', '=0D']
+    for sym in symbols:
+        text = text.replace(sym, '')
+    return text
