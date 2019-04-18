@@ -36,6 +36,7 @@ class AuthAPI(APIView):
     def post(self, request):
         credentials_data = self.request_data_to_credentials_data(request.data)
         mail = credentials_data_to_gmail(credentials_data)
+        print(request.data)
 
         if not mail.validate_credentials():
             return Response({'error': 'Invalid credentials'})
