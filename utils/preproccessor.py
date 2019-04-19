@@ -26,7 +26,7 @@ def bytes_to_html(content):
     # ToDo: logging all errors
     try:
         return str(BeautifulSoup(content, features="html.parser"))
-    except UnboundLocalError:
+    except (UnboundLocalError, TypeError):
         return ''
 
 
@@ -36,8 +36,11 @@ def bytes_html_to_text(content):
     :param content: <bytes> html response
     :return: <str> text content
     """
-    soup = BeautifulSoup(content, features="html.parser")
-    return cleanMe(soup)
+
+    try:
+        return cleanMe(BeautifulSoup(content, features="html.parser"))
+    except (UnboundLocalError, TypeError):
+        return ''
 
 
 def scrap_mail_from_text(content: str) -> str or None:

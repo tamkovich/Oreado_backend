@@ -38,7 +38,7 @@ class Mail(models.Model):
             owner__user=user,
             category_id__in=[3, 2],
             come_from__in=mail_senders
-        ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body')
+        ).values('id', 'cleaned_date', 'come_from', 'snippet', 'text_body', 'subject')
 
     @staticmethod
     def process_mail(mails):  # ToDo: remove and use serializer for that goal in every place
