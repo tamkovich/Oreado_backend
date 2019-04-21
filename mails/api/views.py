@@ -22,6 +22,7 @@ class MailAPIView(BasePermission):
             viewed=False,
         )
         mails = Mail.process_mail(mails)
+        print(len(mails))
         return Response({'data': mails})
 
     @post_param_filter_decorator('mail_id')
