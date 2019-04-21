@@ -320,8 +320,7 @@ class Gmail:
                     res["go_to"] = d["value"]
                     res["go_to_email"] = scrap_mail_from_text(d["value"])
                 if d["name"] == "Subject":
-                    res["go_to"] = d["value"]
-                    res["go_to_email"] = d["value"]
+                    res["subject"] = d["value"]
             else:
                 count += 1
                 res["owner_id"] = (self.owner if isinstance(self.owner, int)
