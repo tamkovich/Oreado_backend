@@ -48,7 +48,7 @@ class Mail(models.Model):
                 'cleaned_date': mail['cleaned_date'],
                 'come_from': mail['come_from'],
                 'snippet': mail['snippet'],
-                'html_body': mail['html_body'],
+                #'html_body': mail['html_body'],
                 'subject': mail['subject']
             } for mail in mails
         ]
