@@ -49,7 +49,7 @@ class Mail(models.Model):
                 'come_from': mail['come_from'],
                 'snippet': mail['snippet'],
                 #'html_body': mail['html_body'],
-                'subject': mail['subject']
+                #'subject': mail['subject']
             } for mail in mails
         ]
 
