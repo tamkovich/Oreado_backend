@@ -230,14 +230,29 @@ class Gmail:
     def get_mime_message_process(self, request_id, response, exception):
         # ToDo: remove not used params with *args, **kwargs
         # ToDo: add docstring
+        # ToDo: put this part of logic in a .get_message_process method
         request_id = str(int(request_id) - 1)
 
         if not response:
             return
 
         loggers.log(logger=self.logger, level="INFO", msg=response["labelIds"])
+        msg_str = ''
         try:
-            msg_str = base64.urlsafe_b64decode(response["raw"]).decode("utf-8")
+            res = response['payload']
+            if 'data' in res['body']:
+                msg_str = base64.urlsafe_b64decode(res['body']['data']).decode("utf-8")
+            else:
+                parts = res['parts']
+                is_multipart = True
+                while is_multipart:
+                    for part in parts:
+                        if part['mimeType'] == 'text/html':
+                            msg_str = base64.urlsafe_b64decode(part['body']['data']).decode("utf-8")
+                            is_multipart = False
+                            break
+                    if is_multipart:
+                        parts = parts[0]['parts']
         except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError) as _er:
             loggers.log(
                 logger=self.logger,
@@ -281,7 +296,8 @@ class Gmail:
             if not need_more:
                 break
             batch.add(self.service.users().messages().get(userId=user_id, id=m['id']), callback=self.get_message_process)
-            batch.add(self.service.users().messages().get(userId=user_id, id=m['id'], format="raw"), callback=self.get_mime_message_process)
+            # ToDo: create 1 only request
+            batch.add(self.service.users().messages().get(userId=user_id, id=m['id']), callback=self.get_mime_message_process)
 
         batch.execute(http=self.service._http)
 
@@ -545,6 +561,8 @@ class Gmail:
         return mime_msg.get_payload()
 
     def get_user_info(self, user_id):
-        # ToDo: add docstring
+        """
+        Returns Email Account Information
+        """
         data = self.service.users().getProfile(userId=user_id)
         return data.execute()
