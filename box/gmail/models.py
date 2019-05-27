@@ -253,7 +253,7 @@ class Gmail:
                             break
                     if is_multipart:
                         parts = parts[0]['parts']
-        except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError) as _er:
+        except (UnicodeError, UnicodeDecodeError, UnicodeEncodeError, KeyError) as _er:
             loggers.log(
                 logger=self.logger,
                 level="ERROR",
