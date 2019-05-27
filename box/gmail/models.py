@@ -159,7 +159,7 @@ class Gmail:
 
     def list_messages_common_data(self, user_id, messages_ids):
         # ToDo: add docstring or replace
-        a_week_ago = datetime.now() - timedelta(days=7)
+        a_week_ago = datetime.now() - timedelta(days=2)
         need_more = True
         count = 0
         for m in messages_ids:
@@ -283,7 +283,7 @@ class Gmail:
 
     def list_messages_common_data_by_user_id(self, user_id, messages_ids):
         # ToDo: add docstring or replace
-        a_week_ago = datetime.now() - timedelta(days=10)
+        a_week_ago = datetime.now() - timedelta(days=3)
         count = 0
 
         need_more = True

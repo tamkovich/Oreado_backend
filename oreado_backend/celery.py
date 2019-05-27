@@ -50,7 +50,7 @@ def load_mails():
             logger=loggers.get_logger('load_mails')
         )
         if mail.validate_credentials():
-            mail.list_messages_one_step("me", count_messages=100)
+            mail.list_messages_one_step("me", count_messages=20)
         else:
             cred.is_active = False
             cred.save()
@@ -65,7 +65,7 @@ def load_mails_for_user(credentials_data, cred_id, user_id):
         logger=loggers.get_logger('load_mails_for_user')
     )
     if mail.validate_credentials():
-        mail.list_messages_one_step("me", count_messages=100)
+        mail.list_messages_one_step("me", count_messages=20)
         mail_sender_active_by_user_id.delay(user_id)
 
 
