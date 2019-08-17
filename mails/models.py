@@ -36,7 +36,7 @@ class Mail(models.Model):
         # ToDo: remove not used params **kwargs
         return cls.objects.filter(
             owner__user=user,
-            category_id__in=[3, 2],
+            # category_id__in=[3, 2],
             come_from__in=mail_senders
         ).values('id', 'cleaned_date', 'come_from', 'snippet', 'html_body', 'text_body', 'subject')
 

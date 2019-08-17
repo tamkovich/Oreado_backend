@@ -94,12 +94,12 @@ def mail_sender_active_by_user_id(user_id):
         predictions = loaded_model.predict(html_bodies)
 
         for mail, prediction in zip(all_mails, predictions):
-            mail.category_id = prediction
+            mail.category_id = 3  # ToDo = prediction
             mail.save()
 
     for mail in all_mails:
         if f"{user.id}-{mail.come_from}" in data:
-            data[f"{user.id}-{mail.come_from}"].append(mail.category_id)
+            data[f"{user.id}-{mail.come_from}"].append(3)  # ToDo append(mail.category_id)
         else:
             data[f"{user.id}-{mail.come_from}"] = []
 
@@ -166,13 +166,13 @@ def mail_sender_active():
         predictions = loaded_model.predict(html_bodies)
 
         for mail, prediction in zip(mails_to_classify, predictions):
-            mail.category_id = prediction
+            mail.category_id = 3  # ToDo = prediction
             mail.save()
 
     for user in all_users:
         for mail in all_mails:
             if f"{user.id}-{mail.come_from}" in data:
-                data[f"{user.id}-{mail.come_from}"].append(mail.category_id)
+                data[f"{user.id}-{mail.come_from}"].append(3)  # ToDo append(mail.category_id)
             else:
                 data[f"{user.id}-{mail.come_from}"] = []
 
